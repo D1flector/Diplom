@@ -1,0 +1,23 @@
+/* Глобальные стили и хелперы для ПТО АО "МСУ-1" */
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.pageText {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.highlightText {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.marginTopSm {
+  margin-top: 0.5rem;
+}
