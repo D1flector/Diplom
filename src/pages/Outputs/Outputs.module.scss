@@ -1,311 +1,330 @@
-// Стили для страницы выходных документов (Outputs) ПТО АО "МСУ-1"
 $bg-dark: #020617;
 $bg-card: #0f172a;
 $border-color: #1e293b;
-$text-muted: #94a3b8;
-$text-light: #f1f5f9;
-$accent-blue: #2563eb;
-$accent-emerald: #10b981;
-$accent-orange: #f97316;
-$accent-purple: #a855f7;
+$accent: #2563eb;
+$success: #10b981;
 
 .container {
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
-  color: #ffffff;
+  padding: 2rem;
+  color: #fff;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-// Сетка 2х2 для карточек задач
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
-  margin-top: 1rem;
 }
 
-// Карточка запуска задачи
 .card {
-  background-color: $bg-card;
+  background: $bg-card;
   border: 1px solid $border-color;
-  border-radius: 0.75rem;
-  padding: 2.5rem 2rem;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer; // ВЕРНУЛИ
+  transition: all 0.2s;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  transition: all 0.25s ease;
-  box-sizing: border-box;
-
   &:hover {
+    border-color: $accent;
     transform: translateY(-4px);
-    border-color: rgba($accent-blue, 0.4);
-    box-shadow: 0 10px 20px -10px rgba($accent-blue, 0.3);
   }
 }
 
-// Круглые иконки с подсветкой
 .iconBox {
-  width: 4.5rem;
-  height: 4.5rem;
-  border-radius: 9999px;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: rgba($accent, 0.1);
+  color: $accent;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
-}
-
-.iconBlue {
-  @extend .iconBox;
-  background-color: rgba($accent-blue, 0.1);
-  color: lighten($accent-blue, 10%);
-}
-.iconOrange {
-  @extend .iconBox;
-  background-color: rgba($accent-orange, 0.1);
-  color: lighten($accent-orange, 10%);
-}
-.iconGreen {
-  @extend .iconBox;
-  background-color: rgba($accent-emerald, 0.1);
-  color: lighten($accent-emerald, 10%);
-}
-.iconPurple {
-  @extend .iconBox;
-  background-color: rgba($accent-purple, 0.1);
-  color: lighten($accent-purple, 10%);
+  margin-bottom: 1rem;
 }
 
 .cardTitle {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: $text-light;
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  line-height: 1.4;
-}
-
-// Кнопка запуска
-.cardButton {
-  padding: 0.625rem 1.5rem;
-  background-color: #020617;
-  color: $text-light;
-  border: 1px solid $border-color;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  width: 100%;
-  box-sizing: border-box;
-
-  &:hover {
-    background-color: $accent-blue;
-    border-color: $accent-blue;
-  }
-}
-
-// ВСПЛЫВАЮЩИЙ ТОСТ ЭКСПОРТА (TOAST)
-.toast {
-  position: fixed;
-  top: 5rem;
-  right: 2rem;
-  background-color: #0f172a;
-  border: 1px solid $accent-emerald;
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-  font-size: 0.875rem;
-  font-weight: 600;
+  margin-bottom: 1rem;
+  min-height: 2.5rem;
   display: flex;
   align-items: center;
-  z-index: 1200;
-  animation: slideIn 0.25s ease-out;
-
-  .toastIcon {
-    margin-right: 0.5rem;
-    color: $accent-emerald;
-  }
+}
+.cardLink {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $accent;
+  text-transform: uppercase;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-// 4. СТИЛИ ШИРОКОГО ОКНА ПРЕДПРОСМОТРА ОТЧЕТА (REPORT MODAL)
+// МОДАЛКА
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1.5rem;
+  z-index: 9999;
+  padding: 40px;
+  overflow-y: auto;
 }
 
 .reportCard {
   width: 100%;
-  max-width: 1100px; // широкое окно для больших таблиц
-  background-color: $bg-card;
-  border: 1px solid $border-color;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
+  max-width: 900px;
+  background: #1e293b;
+  border-radius: 8px;
+  height: fit-content;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
 .reportHeader {
-  padding: 1.25rem 2rem;
-  border-bottom: 1px solid $border-color;
-  background-color: rgba(#000000, 0.2);
+  padding: 10px 20px;
+  background: #0f172a;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
-
-  h4 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #ffffff;
-  }
+  border-bottom: 1px solid $border-color;
+  border-radius: 8px 8px 0 0;
 }
 
-.exportGroup {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.exportBtn {
+.headerTitle {
+  color: #fff;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
-  padding: 0.45rem 1rem;
-  background-color: transparent;
-  color: $text-muted;
-  border: 1px solid $border-color;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
+  gap: 10px;
+}
+.exportGroup {
+  display: flex;
+  gap: 8px;
+}
+
+// КНОПКИ
+.btn {
+  padding: 6px 14px;
+  border-radius: 4px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
+  cursor: pointer; // ВЕРНУЛИ
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  font-size: 0.75rem;
+  transition: opacity 0.2s;
   &:hover {
-    color: #ffffff;
-    background-color: #1e293b;
-    border-color: #cbd5e1;
+    opacity: 0.9;
   }
+}
 
-  svg {
-    margin-right: 0.375rem;
-  }
+.runBtn {
+  @extend .btn;
+  background: $accent;
+  color: #fff;
+}
+.excelBtn {
+  @extend .btn;
+  background: $success;
+  color: #fff;
+}
+.pdfBtn {
+  @extend .btn;
+  background: #6366f1;
+  color: #fff;
+}
+.closeBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .reportBody {
-  padding: 2rem;
-  overflow-y: auto;
-  flex: 1;
+  padding: 40px;
+  background: #0a0f1d;
+  display: flex;
+  justify-content: center;
 }
 
-.tableWrapper {
-  overflow-x: auto;
-  border: 1px solid $border-color;
-  border-radius: 0.5rem;
+// УВЕДОМЛЕНИЕ (TOAST)
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: $success;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10000;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease-out;
+  font-weight: 600;
 }
 
-.table {
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+// ЛИСТ
+.paper {
+  background: white;
+  color: black;
+  width: 210mm;
+  padding: 15mm;
+  font-family: "Times New Roman", Times, serif;
+  box-sizing: border-box;
+}
+
+.docTop {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  font-size: 11pt;
+}
+.docTitleArea {
+  text-align: center;
+  margin-bottom: 25px;
+  font-weight: bold;
+  font-size: 12pt;
+  .underline {
+    height: 1.5px;
+    background: black;
+    width: 100%;
+    margin-top: 4px;
+  }
+}
+
+.printTable {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
-
-  th {
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid $border-color;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: $text-muted;
-    text-transform: uppercase;
-    background-color: #020617;
-  }
-
+  margin-bottom: 40px;
+  th,
   td {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid $border-color;
-    font-size: 0.875rem;
-    color: #cbd5e1;
+    border: 1px solid black;
+    padding: 5px;
+    font-size: 10pt;
+    text-align: center;
+    color: black !important;
   }
-
-  tr:hover {
-    background-color: rgba(#ffffff, 0.02);
+  th {
+    background: #f2f2f2;
   }
-}
-
-.statusSuccess {
-  color: $accent-emerald;
-  font-weight: 600;
-}
-
-.modalFooter {
-  padding: 1rem 2rem;
-  border-top: 1px solid $border-color;
-  background-color: rgba(#000000, 0.1);
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-.cancelBtn {
-  padding: 0.5rem 1.5rem;
-  background-color: transparent;
-  color: $text-muted;
-  border: 1px solid $border-color;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    background-color: #1e293b;
-    color: #ffffff;
+  .numRow td {
+    font-size: 8pt;
+    color: #666 !important;
+    background: #fafafa;
   }
 }
 
-// Загрузчик
-.loader {
-  padding: 5rem 2rem;
+.signatureBlock {
+  margin-top: 50px;
+  font-size: 11pt;
+  .signTitle {
+    text-align: right;
+    margin-bottom: 25px;
+    font-weight: bold;
+  }
+  .signRow {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 10px;
+    .lineGroup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      .line {
+        border-bottom: 1px solid black;
+        width: 160px;
+        height: 20px;
+      }
+      .label {
+        font-size: 8pt;
+        margin-top: 2px;
+      }
+    }
+    .spacer {
+      width: 30px;
+    }
+  }
+}
+
+// ЛОАДЕР
+.loaderArea {
+  padding: 60px;
   text-align: center;
-  color: $accent-blue;
-  font-weight: 600;
-  font-size: 0.95rem;
-
+  color: #fff;
   .spinner {
-    border: 3px solid $border-color;
-    border-top: 3px solid $accent-blue;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba($accent, 0.2);
+    border-top-color: $accent;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
     animation: spin 1s linear infinite;
-    margin: 0 auto 1.5rem auto;
+    margin: 0 auto 15px;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+@media print {
+  @page {
+    margin: 0;
   }
-  100% {
-    transform: rotate(360deg);
+  :global(body) {
+    background: white !important;
+  }
+  :global(#root),
+  .container,
+  .modalOverlay {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+  .reportCard {
+    box-shadow: none !important;
+    max-width: 100% !important;
+    background: white !important;
+  }
+  .reportHeader,
+  .closeBtn,
+  .exportGroup,
+  .grid,
+  .pageTitle,
+  .loaderArea {
+    display: none !important;
+  }
+  .reportBody {
+    padding: 0 !important;
+    background: white !important;
+  }
+  .paper {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    padding: 15mm !important;
   }
 }
