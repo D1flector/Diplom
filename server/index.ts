@@ -4,19 +4,19 @@ import "dotenv/config";
 import pool from "./db.ts";
 import directoryRouter from "./routes/directories.ts";
 import inputsRouter from "./routes/inputs.ts";
-import outputsRouter from "./routes/outputs.ts"; // Исправлено: теперь импортируется правильный файл роутов
+import outputsRouter from "./routes/outputs.ts";
+import authRouter from "./routes/auth.ts";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Подключаем наши API-маршруты
 app.use("/api", inputsRouter);
 app.use("/api/outputs", outputsRouter);
 app.use("/api", directoryRouter);
+app.use("/api/auth", authRouter);
 
-// Тестовый роут для проверки подключения к БД
 app.get("/api/test-db", async (req: Request, res: Response) => {
   try {
     const result = await pool.query("SELECT NOW()");

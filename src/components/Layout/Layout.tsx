@@ -87,7 +87,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className={styles.userInfo}>
               <h4 className={styles.userName}>
-                {user?.username || "Пользователь"}
+                {user?.full_name || user?.username || "Пользователь"}
               </h4>
               <p className={styles.userRole}>
                 {user?.role || "Роль не определена"}

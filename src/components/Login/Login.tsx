@@ -1,40 +1,39 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../store/auth/authSlice"; // Импортируем экшен из стора
-import type { UserRole } from "../../types/entities";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { loginUser } from "../../store/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import { KeyRound, User as UserIcon } from "lucide-react";
 import styles from "./Login.module.scss";
 
 export const Login: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { loading, error } = useAppSelector((state) => state.auth);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      setError("Пожалуйста, заполните все поля ввода");
+    setLocalError("");
+
+    if (!username.trim() || !password.trim()) {
+      setLocalError("Пожалуйста, заполните все поля ввода");
       return;
     }
 
-    setError("");
-
-    // Имитация бэкенда: определяем роль по логину
-    let determinedRole: UserRole = "Инженер ПТО";
-
-    if (username.toLowerCase() === "director") {
-      determinedRole = "Руководитель проекта";
-    } else if (username.toLowerCase() === "admin") {
-      determinedRole = "Администратор";
+    try {
+      await dispatch(
+        loginUser({ username: username.trim(), password }),
+      ).unwrap();
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err);
     }
-
-    // Отправляем данные в Redux-стор
-    dispatch(loginSuccess({ username, role: determinedRole }));
-    navigate("/dashboard"); // Перенаправляем пользователя на дашборд
   };
+
+  const activeError = localError || error;
 
   return (
     <div className={styles.container}>
@@ -48,7 +47,7 @@ export const Login: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {error && <div className={styles.error}>{error}</div>}
+          {activeError && <div className={styles.error}>{activeError}</div>}
 
           <div className={styles.formGroup}>
             <label>Имя пользователя</label>
@@ -59,10 +58,11 @@ export const Login: React.FC = () => {
               <input
                 type="text"
                 required
+                disabled={loading}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className={styles.input}
-                placeholder="Иванов И.И."
+                placeholder="Введите логин"
               />
             </div>
           </div>
@@ -76,16 +76,17 @@ export const Login: React.FC = () => {
               <input
                 type="password"
                 required
+                disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={styles.input}
-                placeholder="••••••••"
+                placeholder="Введите пароль"
               />
             </div>
           </div>
 
-          <button type="submit" className={styles.button}>
-            Войти в систему
+          <button type="submit" disabled={loading} className={styles.button}>
+            {loading ? "Выполняется вход..." : "Войти в систему"}
           </button>
         </form>
       </div>
