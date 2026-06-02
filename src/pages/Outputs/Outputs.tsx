@@ -1,6 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./Outputs.module.scss";
 import * as XLSX from "xlsx";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchPprData } from "../../store/slices/inputsSlice";
+import {
+  calculateOutputs,
+  fetchReportData,
+  resetOutputState,
+} from "../../store/slices/outputsSlice";
 import {
   Calendar,
   Truck,
@@ -13,23 +20,18 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-// Импорт моковых данных
-import {
-  initialWorkVolumes,
-  initialWorkTypes,
-  initialProjectSpec,
-  initialConsumptionNorms,
-  initialLaborNorms,
-  initialContractors,
-} from "../../types/mockData";
-
 type TaskID = 1 | 2 | 3 | 4;
 
 export const Outputs: React.FC = () => {
   const [activeTask, setActiveTask] = useState<TaskID | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [isCalculated, setIsCalculated] = useState(false);
+  const [selectedPprId, setSelectedPprId] = useState<number | "">("");
   const [toast, setToast] = useState<string | null>(null);
+
+  const dispatch = useAppDispatch();
+  const { pprData } = useAppSelector((state) => state.inputs);
+  const { reportData, loading, success } = useAppSelector(
+    (state) => state.outputs,
+  );
 
   const tasks = [
     {
@@ -54,12 +56,30 @@ export const Outputs: React.FC = () => {
     },
   ];
 
-  const handleRun = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setIsCalculated(true);
-    }, 1000);
+  useEffect(() => {
+    dispatch(fetchPprData());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (activeTask && selectedPprId) {
+      dispatch(
+        fetchReportData({ taskId: activeTask, pprId: Number(selectedPprId) }),
+      );
+    }
+  }, [activeTask, selectedPprId, dispatch]);
+
+  const handleRun = async () => {
+    if (!selectedPprId) {
+      showToast("Сначала выберите объект строительства");
+      return;
+    }
+    const res = await dispatch(calculateOutputs(Number(selectedPprId)));
+    if (res.meta.requestStatus === "fulfilled" && activeTask) {
+      dispatch(
+        fetchReportData({ taskId: activeTask, pprId: Number(selectedPprId) }),
+      );
+      showToast("Расчеты успешно обновлены");
+    }
   };
 
   const showToast = (msg: string) => {
@@ -67,78 +87,61 @@ export const Outputs: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ФУНКЦИЯ РЕАЛЬНОГО ЭКСПОРТА ВСЕХ ДАННЫХ В EXCEL
+  const getSelectedObjectName = () => {
+    const obj = pprData.find((p) => p.ppr_id === Number(selectedPprId));
+    return obj ? obj.object_name : "—";
+  };
+
   const exportToExcel = (id: TaskID) => {
-    let exportData: any[] = [];
+    if (reportData.length === 0) return;
     const taskName = tasks.find((t) => t.id === id)?.name || "Otchet";
+    let exportData: any[] = [];
 
     if (id === 1) {
-      exportData = initialWorkVolumes.map((v, i) => {
-        const type = initialWorkTypes.find((t) => t.Work_name === v.Work_name);
-        return {
-          "№ п/п": i + 1,
-          "Наименование работ": v.Work_name,
-          "Всего чел/час": (
-            (type?.Staff_Qty || 1) *
-            v.Duration_Days *
-            8
-          ).toFixed(2),
-          "Кол-во чел": type?.Staff_Qty || 0,
-          Дней: v.Duration_Days,
-          "Дата начала": i === 0 ? "20.03.2026" : "25.03.2026",
-          "Дата окончания": i === 0 ? "24.03.2026" : "08.04.2026",
-        };
-      });
+      exportData = reportData.map((item, i) => ({
+        "№ п/п": i + 1,
+        "Наименование работ": item.work_name,
+        "Всего чел/час": Number(item.total_manhours).toFixed(2),
+        "Кол-во чел": item.staff_qty,
+        Дней: item.work_days,
+        "Дата начала": new Date(item.start_date).toLocaleDateString(),
+        "Дата окончания": new Date(item.end_date).toLocaleDateString(),
+      }));
     } else if (id === 2) {
-      exportData = initialProjectSpec.map((s, i) => {
-        const norm = initialConsumptionNorms.find(
-          (n) => n.Res_Category === s.Material_Name,
-        );
-        return {
-          "№ п/п": i + 1,
-          "Наименование материала": s.Material_Name,
-          "Ед. изм.": s.Unit,
-          "Расчетный объем": (s.Proj_Vol * (norm?.Coeff_K || 1)).toFixed(2),
-          "Дата поставки": "20.03.2026",
-          "Этап ГПР": norm?.Work_Type || "Общестроительные",
-        };
-      });
+      exportData = reportData.map((item, i) => ({
+        "№ п/п": i + 1,
+        "Наименование материала": item.mat_name,
+        "Ед. изм.": item.unit,
+        "Расчетный объем": Number(item.req_volume).toFixed(2),
+        "Дата поставки": new Date(item.delivery_date).toLocaleDateString(),
+        "Этап ГПР": item.stage_link,
+      }));
     } else if (id === 3) {
-      exportData = initialLaborNorms.map((n, i) => {
-        const vol = initialWorkVolumes.find((v) => v.Work_name === n.Work_Type);
-        const hours = (vol?.Volume || 0) * n.ManHour_Norm;
-        return {
-          "№ п/п": i + 1,
-          "Вид работ": n.Work_Type,
-          Специальность: n.Specialty,
-          "Срок (дн)": vol?.Duration_Days || 0,
-          "Трудоемкость (чел-час)": hours.toFixed(2),
-          "Численность (чел)": Math.ceil(
-            hours / ((vol?.Duration_Days || 1) * 8),
-          ),
-        };
-      });
+      exportData = reportData.map((item, i) => ({
+        "№ п/п": i + 1,
+        "Вид работ": item.work_name,
+        Специальность: item.specialty,
+        "Срок (дн)": item.work_days,
+        "Трудоемкость (чел-час)": Number(item.total_hours).toFixed(2),
+        "Численность (чел)": item.staff_count,
+      }));
     } else if (id === 4) {
-      exportData = initialWorkVolumes.map((v, i) => {
-        const contr = initialContractors[i % initialContractors.length];
-        return {
-          "№ п/п": i + 1,
-          Работа: v.Work_name,
-          Объем: v.Volume,
-          Подрядчик: contr.Org_Name,
-          Срок: contr.Offer_Days,
-          Начало: "25.03",
-          Конец: "03.04",
-          "Стоимость (руб)": contr.Offer_Cost,
-        };
-      });
+      exportData = reportData.map((item, i) => ({
+        "№ п/п": i + 1,
+        Работа: item.work_name,
+        Объем: item.work_vol_unit,
+        Подрядчик: item.assigned_org || "Не назначен",
+        Срок: item.final_days,
+        Начало: new Date(item.actual_start).toLocaleDateString(),
+        Конец: new Date(item.actual_end).toLocaleDateString(),
+        "Стоимость (руб)": Number(item.final_cost).toLocaleString(),
+      }));
     }
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Результаты расчета");
     XLSX.writeFile(wb, `MSU1_${taskName}.xlsx`);
-
     showToast("Файл Excel успешно сформирован");
   };
 
@@ -161,7 +164,7 @@ export const Outputs: React.FC = () => {
             className={styles.card}
             onClick={() => {
               setActiveTask(t.id);
-              setIsCalculated(false);
+              dispatch(resetOutputState());
             }}
           >
             <div className={styles.iconBox}>{t.icon}</div>
@@ -177,34 +180,79 @@ export const Outputs: React.FC = () => {
             <div className={styles.reportHeader}>
               <div className={styles.headerTitle}>
                 <button
-                  onClick={() => setActiveTask(null)}
+                  onClick={() => {
+                    setActiveTask(null);
+                    setSelectedPprId("");
+                  }}
                   className={styles.closeBtn}
                 >
                   <ArrowLeft size={18} />
                 </button>
                 <span>Предпросмотр документа</span>
               </div>
-              <div className={styles.exportGroup}>
-                {!isCalculated ? (
-                  <button onClick={handleRun} className={styles.runBtn}>
-                    <Play size={14} fill="white" /> Рассчитать
-                  </button>
-                ) : (
-                  <>
+
+              <div
+                style={{ display: "flex", gap: "10px", alignItems: "center" }}
+              >
+                <select
+                  required
+                  value={selectedPprId}
+                  onChange={(e) =>
+                    setSelectedPprId(Number(e.target.value) || "")
+                  }
+                  style={{
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#1e293b",
+                    color: "#fff",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  <option value="">-- Выберите объект --</option>
+                  {pprData.map((ppr) => (
+                    <option key={ppr.ppr_id} value={ppr.ppr_id}>
+                      {ppr.object_name}
+                    </option>
+                  ))}
+                </select>
+
+                <div className={styles.exportGroup}>
+                  {reportData.length === 0 ? (
                     <button
-                      onClick={() => exportToExcel(activeTask)}
-                      className={styles.excelBtn}
+                      onClick={handleRun}
+                      disabled={!selectedPprId}
+                      className={styles.runBtn}
                     >
-                      <FileSpreadsheet size={14} /> Excel
+                      <Play size={14} fill="white" /> Рассчитать
                     </button>
-                    <button
-                      onClick={() => window.print()}
-                      className={styles.pdfBtn}
-                    >
-                      <FileText size={14} /> Печать PDF
-                    </button>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleRun}
+                        className={styles.runBtn}
+                        style={{
+                          marginRight: "10px",
+                          backgroundColor: "#0284c7",
+                        }}
+                      >
+                        Пересчитать
+                      </button>
+                      <button
+                        onClick={() => exportToExcel(activeTask)}
+                        className={styles.excelBtn}
+                      >
+                        <FileSpreadsheet size={14} /> Excel
+                      </button>
+                      <button
+                        onClick={() => window.print()}
+                        className={styles.pdfBtn}
+                      >
+                        <FileText size={14} /> Печать PDF
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -212,9 +260,9 @@ export const Outputs: React.FC = () => {
               {loading ? (
                 <div className={styles.loaderArea}>
                   <div className={styles.spinner}></div>
-                  <h3>Ожидайте...</h3>
+                  <h3>Ожидайте, выполняются вычисления...</h3>
                 </div>
-              ) : isCalculated ? (
+              ) : reportData.length > 0 ? (
                 <div className={styles.paper} id="printable-doc">
                   <div className={styles.docTop}>
                     <div style={{ fontWeight: "bold" }}>АО «МСУ-1»</div>
@@ -240,7 +288,7 @@ export const Outputs: React.FC = () => {
                         marginTop: "4px",
                       }}
                     >
-                      на объекте: ЖК «Северный»
+                      на объекте: {getSelectedObjectName()}
                     </div>
                     <div className={styles.underline}></div>
                   </div>
@@ -269,29 +317,21 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {initialWorkVolumes.map((v, i) => {
-                            const type = initialWorkTypes.find(
-                              (t) => t.Work_name === v.Work_name,
-                            );
-                            const hours = (
-                              (type?.Staff_Qty || 1) *
-                              v.Duration_Days *
-                              8
-                            ).toFixed(2);
-                            const start = i === 0 ? "20.03.2026" : "25.03.2026";
-                            const end = i === 0 ? "24.03.2026" : "08.04.2026";
-                            return (
-                              <tr key={i}>
-                                <td>{i + 1}</td>
-                                <td>{v.Work_name}</td>
-                                <td>{hours}</td>
-                                <td>{type?.Staff_Qty}</td>
-                                <td>{v.Duration_Days}</td>
-                                <td>{start}</td>
-                                <td>{end}</td>
-                              </tr>
-                            );
-                          })}
+                          {reportData.map((item, i) => (
+                            <tr key={i}>
+                              <td>{i + 1}</td>
+                              <td>{item.work_name}</td>
+                              <td>{Number(item.total_manhours).toFixed(2)}</td>
+                              <td>{item.staff_qty} чел.</td>
+                              <td>{item.work_days} дн.</td>
+                              <td>
+                                {new Date(item.start_date).toLocaleDateString()}
+                              </td>
+                              <td>
+                                {new Date(item.end_date).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </>
                     )}
@@ -317,25 +357,20 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {initialProjectSpec.map((spec, i) => {
-                            const norm = initialConsumptionNorms.find(
-                              (n) => n.Res_Category === spec.Material_Name,
-                            );
-                            return (
-                              <tr key={i}>
-                                <td>{i + 1}</td>
-                                <td>{spec.Material_Name}</td>
-                                <td>{spec.Unit}</td>
-                                <td>
-                                  {(
-                                    spec.Proj_Vol * (norm?.Coeff_K || 1)
-                                  ).toFixed(2)}
-                                </td>
-                                <td>20.03.2026</td>
-                                <td>{norm?.Work_Type || "Общее"}</td>
-                              </tr>
-                            );
-                          })}
+                          {reportData.map((item, i) => (
+                            <tr key={i}>
+                              <td>{i + 1}</td>
+                              <td>{item.mat_name}</td>
+                              <td>{item.unit}</td>
+                              <td>{Number(item.req_volume).toFixed(2)}</td>
+                              <td>
+                                {new Date(
+                                  item.delivery_date,
+                                ).toLocaleDateString()}
+                              </td>
+                              <td>{item.stage_link}</td>
+                            </tr>
+                          ))}
                         </tbody>
                       </>
                     )}
@@ -361,25 +396,18 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {initialLaborNorms.map((n, i) => {
-                            const vol = initialWorkVolumes.find(
-                              (v) => v.Work_name === n.Work_Type,
-                            );
-                            const hours = (vol?.Volume || 0) * n.ManHour_Norm;
-                            const count = Math.ceil(
-                              hours / ((vol?.Duration_Days || 1) * 8),
-                            );
-                            return (
-                              <tr key={i}>
-                                <td>{i + 1}</td>
-                                <td>{n.Work_Type}</td>
-                                <td>{n.Specialty}</td>
-                                <td>{vol?.Duration_Days || 0}</td>
-                                <td>{hours.toFixed(2)}</td>
-                                <td>{count} чел.</td>
-                              </tr>
-                            );
-                          })}
+                          {reportData.map((item, i) => (
+                            <tr key={i}>
+                              <td>{i + 1}</td>
+                              <td>{item.work_name}</td>
+                              <td>{item.specialty}</td>
+                              <td>{item.work_days} дн.</td>
+                              <td>
+                                {Number(item.total_hours).toFixed(2)} чел/час
+                              </td>
+                              <td>{item.staff_count} чел.</td>
+                            </tr>
+                          ))}
                         </tbody>
                       </>
                     )}
@@ -392,7 +420,7 @@ export const Outputs: React.FC = () => {
                             <th>Работа</th>
                             <th>Объем</th>
                             <th>Подрядчик</th>
-                            <th>Срок</th>
+                            <th>Срок (дней)</th>
                             <th>Начало</th>
                             <th>Конец</th>
                             <th>Стоимость</th>
@@ -409,19 +437,23 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {initialWorkVolumes.map((v, i) => (
+                          {reportData.map((item, i) => (
                             <tr key={i}>
                               <td>{i + 1}</td>
-                              <td>{v.Work_name}</td>
-                              <td>{v.Volume}</td>
-                              <td>{initialContractors[i % 3].Org_Name}</td>
-                              <td>10</td>
-                              <td>25.03</td>
-                              <td>03.04</td>
+                              <td>{item.work_name}</td>
+                              <td>{item.work_vol_unit}</td>
+                              <td>{item.assigned_org || "Не назначен"}</td>
+                              <td>{item.final_days} дн.</td>
                               <td>
-                                {initialContractors[
-                                  i % 3
-                                ].Offer_Cost.toLocaleString()}
+                                {new Date(
+                                  item.actual_start,
+                                ).toLocaleDateString()}
+                              </td>
+                              <td>
+                                {new Date(item.actual_end).toLocaleDateString()}
+                              </td>
+                              <td>
+                                {Number(item.final_cost).toLocaleString()} руб.
                               </td>
                             </tr>
                           ))}
@@ -455,7 +487,9 @@ export const Outputs: React.FC = () => {
                     padding: "100px",
                   }}
                 >
-                  Нажмите кнопку «Рассчитать»
+                  {!selectedPprId
+                    ? "Выберите объект строительства для просмотра результатов"
+                    : "Нажмите кнопку «Рассчитать» для запуска алгоритмов планирования"}
                 </div>
               )}
             </div>
