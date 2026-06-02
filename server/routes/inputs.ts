@@ -1,0 +1,582 @@
+import { Router, Request, Response } from "express";
+import pool from "../db.ts";
+
+const router = Router();
+
+// =========================================================================
+// 1. ПАРАМЕТРЫ ППР (ppr_data)
+// =========================================================================
+
+router.get("/ppr-data", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM ppr_data ORDER BY ppr_id ASC",
+    );
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/ppr-data", async (req: Request, res: Response) => {
+  const {
+    object_name,
+    responsible_person,
+    start_date_smr,
+    technology_type,
+    ppr_section,
+    parameter,
+    value,
+  } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO ppr_data (object_name, responsible_person, start_date_smr, technology_type, ppr_section, parameter, value)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        object_name,
+        responsible_person,
+        start_date_smr || null,
+        technology_type || null,
+        ppr_section || null,
+        parameter || null,
+        value || null,
+      ],
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/ppr-data/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const {
+    object_name,
+    responsible_person,
+    start_date_smr,
+    technology_type,
+    ppr_section,
+    parameter,
+    value,
+  } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE ppr_data
+       SET object_name = $1, responsible_person = $2, start_date_smr = $3, technology_type = $4, ppr_section = $5, parameter = $6, value = $7
+       WHERE ppr_id = $8 RETURNING *`,
+      [
+        object_name,
+        responsible_person,
+        start_date_smr || null,
+        technology_type || null,
+        ppr_section || null,
+        parameter || null,
+        value || null,
+        id,
+      ],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/ppr-data/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM ppr_data WHERE ppr_id = $1 RETURNING ppr_id",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json({ id: Number(id) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// 2. ВИДЫ РАБОТ (work_types)
+// =========================================================================
+
+router.get("/work-types", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM work_types ORDER BY work_type_id ASC",
+    );
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/work-types", async (req: Request, res: Response) => {
+  const { work_name, complexity, specialists, staff_qty, duration } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO work_types (work_name, complexity, specialists, staff_qty, duration)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [
+        work_name,
+        parseFloat(complexity) || 0,
+        specialists || null,
+        parseInt(staff_qty) || 0,
+        parseInt(duration) || 0,
+      ],
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/work-types/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { work_name, complexity, specialists, staff_qty, duration } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE work_types
+       SET work_name = $1, complexity = $2, specialists = $3, staff_qty = $4, duration = $5
+       WHERE work_type_id = $6 RETURNING *`,
+      [
+        work_name,
+        parseFloat(complexity) || 0,
+        specialists || null,
+        parseInt(staff_qty) || 0,
+        parseInt(duration) || 0,
+        id,
+      ],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/work-types/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM work_types WHERE work_type_id = $1 RETURNING work_type_id",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json({ id: Number(id) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// 3. ДИРЕКТИВНЫЕ СРОКИ (client_deadlines)
+// =========================================================================
+
+router.get("/client-deadlines", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT cd.*, p.object_name 
+      FROM client_deadlines cd
+      LEFT JOIN ppr_data p ON cd.ppr_id = p.ppr_id
+      ORDER BY cd.deadline_id ASC
+    `);
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/client-deadlines", async (req: Request, res: Response) => {
+  const { ppr_id, stage_name, start_date, end_date, rigidity, comment } =
+    req.body;
+  try {
+    const insertResult = await pool.query(
+      `INSERT INTO client_deadlines (ppr_id, stage_name, start_date, end_date, rigidity, comment)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        parseInt(ppr_id),
+        stage_name,
+        start_date || null,
+        end_date || null,
+        rigidity || null,
+        comment || null,
+      ],
+    );
+    const fullRow = await pool.query(
+      `
+      SELECT cd.*, p.object_name 
+      FROM client_deadlines cd
+      LEFT JOIN ppr_data p ON cd.ppr_id = p.ppr_id
+      WHERE cd.deadline_id = $1
+    `,
+      [insertResult.rows[0].deadline_id],
+    );
+    res.status(201).json(fullRow.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/client-deadlines/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { ppr_id, stage_name, start_date, end_date, rigidity, comment } =
+    req.body;
+  try {
+    const updateResult = await pool.query(
+      `UPDATE client_deadlines
+       SET ppr_id = $1, stage_name = $2, start_date = $3, end_date = $4, rigidity = $5, comment = $6
+       WHERE deadline_id = $7 RETURNING *`,
+      [
+        parseInt(ppr_id),
+        stage_name,
+        start_date || null,
+        end_date || null,
+        rigidity || null,
+        comment || null,
+        id,
+      ],
+    );
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    const fullRow = await pool.query(
+      `
+      SELECT cd.*, p.object_name 
+      FROM client_deadlines cd
+      LEFT JOIN ppr_data p ON cd.ppr_id = p.ppr_id
+      WHERE cd.deadline_id = $1
+    `,
+      [id],
+    );
+    res.json(fullRow.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/client-deadlines/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM client_deadlines WHERE deadline_id = $1 RETURNING deadline_id",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json({ id: Number(id) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// 4. ВЕДОМОСТЬ ОБЪЕМОВ РАБОТ (work_volumes)
+// =========================================================================
+
+router.get("/work-volumes", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT wv.*, p.object_name, wt.work_name
+      FROM work_volumes wv
+      LEFT JOIN ppr_data p ON wv.ppr_id = p.ppr_id
+      LEFT JOIN work_types wt ON wv.work_type_id = wt.work_type_id
+      ORDER BY wv.vol_id ASC
+    `);
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/work-volumes", async (req: Request, res: Response) => {
+  const { ppr_id, work_type_id, volume, unit, dependency, duration_days } =
+    req.body;
+  try {
+    const insertResult = await pool.query(
+      `INSERT INTO work_volumes (ppr_id, work_type_id, volume, unit, dependency, duration_days)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        parseInt(ppr_id),
+        parseInt(work_type_id),
+        parseFloat(volume) || 0,
+        unit || null,
+        dependency || null,
+        parseInt(duration_days) || 0,
+      ],
+    );
+    const fullRow = await pool.query(
+      `
+      SELECT wv.*, p.object_name, wt.work_name
+      FROM work_volumes wv
+      LEFT JOIN ppr_data p ON wv.ppr_id = p.ppr_id
+      LEFT JOIN work_types wt ON wv.work_type_id = wt.work_type_id
+      WHERE wv.vol_id = $1
+    `,
+      [insertResult.rows[0].vol_id],
+    );
+    res.status(201).json(fullRow.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/work-volumes/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { ppr_id, work_type_id, volume, unit, dependency, duration_days } =
+    req.body;
+  try {
+    const updateResult = await pool.query(
+      `UPDATE work_volumes
+       SET ppr_id = $1, work_type_id = $2, volume = $3, unit = $4, dependency = $5, duration_days = $6
+       WHERE vol_id = $7 RETURNING *`,
+      [
+        parseInt(ppr_id),
+        parseInt(work_type_id),
+        parseFloat(volume) || 0,
+        unit || null,
+        dependency || null,
+        parseInt(duration_days) || 0,
+        id,
+      ],
+    );
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    const fullRow = await pool.query(
+      `
+      SELECT wv.*, p.object_name, wt.work_name
+      FROM work_volumes wv
+      LEFT JOIN ppr_data p ON wv.ppr_id = p.ppr_id
+      LEFT JOIN work_types wt ON wv.work_type_id = wt.work_type_id
+      WHERE wv.vol_id = $1
+    `,
+      [id],
+    );
+    res.json(fullRow.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/work-volumes/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM work_volumes WHERE vol_id = $1 RETURNING vol_id",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json({ id: Number(id) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// 5. СПЕЦИФИКАЦИЯ ПРОЕКТА (project_spec)
+// =========================================================================
+
+router.get("/project-spec", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT ps.*, p.object_name 
+      FROM project_spec ps
+      LEFT JOIN ppr_data p ON ps.ppr_id = p.ppr_id
+      ORDER BY ps.spec_id ASC
+    `);
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/project-spec", async (req: Request, res: Response) => {
+  const { ppr_id, material_name, characteristics, unit, proj_vol } = req.body;
+  try {
+    const insertResult = await pool.query(
+      `INSERT INTO project_spec (ppr_id, material_name, characteristics, unit, proj_vol)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [
+        parseInt(ppr_id),
+        material_name,
+        characteristics || null,
+        unit || null,
+        parseFloat(proj_vol) || 0,
+      ],
+    );
+    const fullRow = await pool.query(
+      `
+      SELECT ps.*, p.object_name 
+      FROM project_spec ps
+      LEFT JOIN ppr_data p ON ps.ppr_id = p.ppr_id
+      WHERE ps.spec_id = $1
+    `,
+      [insertResult.rows[0].spec_id],
+    );
+    res.status(201).json(fullRow.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/project-spec/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { ppr_id, material_name, characteristics, unit, proj_vol } = req.body;
+  try {
+    const updateResult = await pool.query(
+      `UPDATE project_spec
+       SET ppr_id = $1, material_name = $2, characteristics = $3, unit = $4, proj_vol = $5
+       WHERE spec_id = $6 RETURNING *`,
+      [
+        parseInt(ppr_id),
+        material_name,
+        characteristics || null,
+        unit || null,
+        parseFloat(proj_vol) || 0,
+        id,
+      ],
+    );
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    const fullRow = await pool.query(
+      `
+      SELECT ps.*, p.object_name 
+      FROM project_spec ps
+      LEFT JOIN ppr_data p ON ps.ppr_id = p.ppr_id
+      WHERE ps.spec_id = $1
+    `,
+      [id],
+    );
+    res.json(fullRow.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/project-spec/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM project_spec WHERE spec_id = $1 RETURNING spec_id",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json({ id: Number(id) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =========================================================================
+// 6. ПРЕДЛОЖЕНИЯ ПОДРЯДЧИКОВ (contractor_list)
+// =========================================================================
+
+router.get("/contractors", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM contractor_list ORDER BY cont_id ASC",
+    );
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/contractors", async (req: Request, res: Response) => {
+  const {
+    contract_id,
+    org_name,
+    contact_person,
+    team_size,
+    work_desc,
+    offer_days,
+    offer_cost,
+  } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO contractor_list (contract_id, org_name, contact_person, team_size, work_desc, offer_days, offer_cost)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        contract_id || null,
+        org_name,
+        contact_person || null,
+        parseInt(team_size) || 0,
+        work_desc || null,
+        parseInt(offer_days) || 0,
+        parseFloat(offer_cost) || 0,
+      ],
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/contractors/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const {
+    contract_id,
+    org_name,
+    contact_person,
+    team_size,
+    work_desc,
+    offer_days,
+    offer_cost,
+  } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE contractor_list
+       SET contract_id = $1, org_name = $2, contact_person = $3, team_size = $4, work_desc = $5, offer_days = $6, offer_cost = $7
+       WHERE cont_id = $8 RETURNING *`,
+      [
+        contract_id || null,
+        org_name,
+        contact_person || null,
+        parseInt(team_size) || 0,
+        work_desc || null,
+        parseInt(offer_days) || 0,
+        parseFloat(offer_cost) || 0,
+        id,
+      ],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/contractors/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM contractor_list WHERE cont_id = $1 RETURNING cont_id",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Запись не найдена" });
+    }
+    res.json({ id: Number(id) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;

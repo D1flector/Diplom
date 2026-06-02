@@ -36,21 +36,32 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {data.map((item) => {
+            {data.map((item, idx) => {
+              // Пытаемся получить ID строки
               const itemId = item[idField] as unknown as number;
               const isSelected = selectedId === itemId;
 
+              // Если itemId отсутствует, используем индекс в качестве ключа, чтобы React не ругался
+              const safeKey =
+                itemId !== undefined && itemId !== null
+                  ? String(itemId)
+                  : `fallback-key-${idx}`;
+
               return (
                 <tr
-                  key={itemId}
-                  onClick={() => onRowClick(itemId)}
+                  key={safeKey}
+                  onClick={() =>
+                    itemId !== undefined &&
+                    itemId !== null &&
+                    onRowClick(itemId)
+                  }
                   className={`${styles.rowInteractive} ${isSelected ? styles.selectedRow : ""}`}
                 >
                   {columns.map((col, colIdx) => {
                     return (
                       <td key={colIdx}>
                         {typeof col === "function"
-                          ? col(item) // если передан кастомный рендерер (например, форматирование цены)
+                          ? col(item) // если передан кастомный рендерер
                           : (item[col] as React.ReactNode)}
                       </td>
                     );

@@ -1,43 +1,52 @@
-import React, { useState } from "react";
-import styles from "./Directories.module.scss";
-import { Plus, Edit3, Trash2 } from "lucide-react";
-import { DataTable } from "../../components/DataTable/DataTable"; // Импортируем наш универсальный компонент
-import type { ConsumptionNorm, LaborNorm } from "../../types/entities";
+import React, { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
-  initialConsumptionNorms,
-  initialLaborNorms,
-} from "../../types/mockData";
+  fetchMtrNorms,
+  fetchLaborNorms,
+  addMtrNorm,
+  updateMtrNorm,
+  deleteMtrNorm,
+  addLaborNorm,
+  updateLaborNorm,
+  deleteLaborNorm,
+} from "../../store/slices/directorySlice";
+import { DataTable } from "../../components/DataTable/DataTable";
+import { Plus, Edit3, Trash2 } from "lucide-react";
+import styles from "./Directories.module.scss";
 
-type TabType = "materials" | "labor";
+type TabType = "mtr" | "labor";
 
 export const Directories: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("materials");
-
-  // Массивы данных в стейте
-  const [materials, setMaterials] = useState<ConsumptionNorm[]>(
-    initialConsumptionNorms,
-  );
-  const [labor, setLabor] = useState<LaborNorm[]>(initialLaborNorms);
-
-  // ID выбранной кликом строки
+  const [activeTab, setActiveTab] = useState<TabType>("mtr");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const dispatch = useAppDispatch();
 
-  // Состояния модального окна
+  // Получаем списки из Redux
+  const { mtrNorms, laborNorms, loading } = useAppSelector(
+    (state) => state.directory,
+  );
+
+  // Стейты управления модальным окном
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Поля ввода модального окна
-  const [matCategory, setMatCategory] = useState("");
-  const [matWorkType, setMatWorkType] = useState("");
-  const [matCoeff, setMatCoeff] = useState("");
-  const [matRationale, setMatRationale] = useState("");
+  // Поля ввода для МТР
+  const [mtrWorkName, setMtrWorkName] = useState("");
+  const [mtrResCategory, setMtrResCategory] = useState("");
+  const [mtrCoeffK, setMtrCoeffK] = useState("");
+  const [mtrRationale, setMtrRationale] = useState("");
 
-  const [labWorkType, setLabWorkType] = useState("");
+  // Поля ввода для норм труда
+  const [labWorkName, setLabWorkName] = useState("");
   const [labSpecialty, setLabSpecialty] = useState("");
-  const [labRank, setLabRank] = useState("");
-  const [labNorm, setLabNorm] = useState("");
+  const [labRank, setLabRank] = useState("1");
+  const [labManhourNorm, setLabManhourNorm] = useState("");
 
-  // Переключение вкладок (сбрасывает выбор строки)
+  useEffect(() => {
+    dispatch(fetchMtrNorms());
+    dispatch(fetchLaborNorms());
+  }, [dispatch]);
+
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setSelectedId(null);
@@ -47,120 +56,85 @@ export const Directories: React.FC = () => {
     setSelectedId(selectedId === id ? null : id);
   };
 
-  // 1. УДАЛЕНИЕ ВЫБРАННОЙ СТРОКИ
   const handleDeleteSelected = () => {
     if (selectedId === null) return;
-
-    if (activeTab === "materials") {
-      setMaterials(materials.filter((item) => item.Norm_ID !== selectedId));
+    if (activeTab === "mtr") {
+      dispatch(deleteMtrNorm(selectedId));
     } else {
-      setLabor(labor.filter((item) => item.Norm_ID !== selectedId));
+      dispatch(deleteLaborNorm(selectedId));
     }
     setSelectedId(null);
   };
 
-  // 2. ОТКРЫТИЕ ДЛЯ ДОБАВЛЕНИЯ
   const handleOpenAdd = () => {
     setIsEditMode(false);
     setIsModalOpen(true);
-    setMatCategory("");
-    setMatWorkType("");
-    setMatCoeff("");
-    setMatRationale("");
-    setLabWorkType("");
+
+    // Сброс МТР
+    setMtrWorkName("");
+    setMtrResCategory("");
+    setMtrCoeffK("");
+    setMtrRationale("");
+
+    // Сброс норм труда
+    setLabWorkName("");
     setLabSpecialty("");
-    setLabRank("");
-    setLabNorm("");
+    setLabRank("1");
+    setLabManhourNorm("");
   };
 
-  // 3. ОТКРЫТИЕ ДЛЯ РЕДАКТИРОВАНИЯ ВЫБРАННОЙ СТРОКИ
   const handleOpenEditSelected = () => {
     if (selectedId === null) return;
     setIsEditMode(true);
     setIsModalOpen(true);
 
-    if (activeTab === "materials") {
-      const item = materials.find((m) => m.Norm_ID === selectedId);
+    if (activeTab === "mtr") {
+      const item = mtrNorms.find((n) => n.norm_id === selectedId);
       if (item) {
-        setMatCategory(item.Res_Category);
-        setMatWorkType(item.Work_Type);
-        setMatCoeff(item.Coeff_K.toString());
-        setMatRationale(item.Rationale || "");
+        setMtrWorkName(item.work_name);
+        setMtrResCategory(item.res_category);
+        setMtrCoeffK(item.coeff_k.toString());
+        setMtrRationale(item.rationale || "");
       }
     } else {
-      const item = labor.find((l) => l.Norm_ID === selectedId);
+      const item = laborNorms.find((n) => n.norm_id === selectedId);
       if (item) {
-        setLabWorkType(item.Work_Type);
-        setLabSpecialty(item.Specialty);
-        setLabRank(item.Rank.toString());
-        setLabNorm(item.ManHour_Norm.toString());
+        setLabWorkName(item.work_name);
+        setLabSpecialty(item.specialty);
+        setLabRank(item.rank.toString());
+        setLabManhourNorm(item.manhour_norm.toString());
       }
     }
   };
 
-  // 4. СОХРАНЕНИЕ
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (activeTab === "materials") {
+    if (activeTab === "mtr") {
+      const payload = {
+        work_name: mtrWorkName,
+        res_category: mtrResCategory,
+        coeff_k: parseFloat(mtrCoeffK) || 0,
+        rationale: mtrRationale || "",
+      };
+
       if (isEditMode && selectedId !== null) {
-        setMaterials(
-          materials.map((m) =>
-            m.Norm_ID === selectedId
-              ? {
-                  Norm_ID: selectedId,
-                  Res_Category: matCategory,
-                  Work_Type: matWorkType,
-                  Coeff_K: parseFloat(matCoeff) || 0,
-                  Rationale: matRationale || null,
-                }
-              : m,
-          ),
-        );
+        dispatch(updateMtrNorm({ id: selectedId, data: payload }));
       } else {
-        const newId =
-          materials.length > 0
-            ? Math.max(...materials.map((m) => m.Norm_ID)) + 1
-            : 1;
-        setMaterials([
-          ...materials,
-          {
-            Norm_ID: newId,
-            Res_Category: matCategory,
-            Work_Type: matWorkType,
-            Coeff_K: parseFloat(matCoeff) || 0,
-            Rationale: matRationale || null,
-          },
-        ]);
+        dispatch(addMtrNorm(payload));
       }
     } else {
+      const payload = {
+        work_name: labWorkName,
+        specialty: labSpecialty,
+        rank: parseInt(labRank) || 1,
+        manhour_norm: parseFloat(labManhourNorm) || 0,
+      };
+
       if (isEditMode && selectedId !== null) {
-        setLabor(
-          labor.map((l) =>
-            l.Norm_ID === selectedId
-              ? {
-                  Norm_ID: selectedId,
-                  Work_Type: labWorkType,
-                  Specialty: labSpecialty,
-                  Rank: parseInt(labRank) || 1,
-                  ManHour_Norm: parseFloat(labNorm) || 0,
-                }
-              : l,
-          ),
-        );
+        dispatch(updateLaborNorm({ id: selectedId, data: payload }));
       } else {
-        const newId =
-          labor.length > 0 ? Math.max(...labor.map((l) => l.Norm_ID)) + 1 : 1;
-        setLabor([
-          ...labor,
-          {
-            Norm_ID: newId,
-            Work_Type: labWorkType,
-            Specialty: labSpecialty,
-            Rank: parseInt(labRank) || 1,
-            ManHour_Norm: parseFloat(labNorm) || 0,
-          },
-        ]);
+        dispatch(addLaborNorm(payload));
       }
     }
 
@@ -168,19 +142,50 @@ export const Directories: React.FC = () => {
     setSelectedId(null);
   };
 
+  const mtrConfig = {
+    title: "Справочник норм расхода материально-технических ресурсов (МТР)",
+    headers: [
+      "ID",
+      "Вид работ",
+      "Материал / Категория ресурса",
+      "Коэфф. К",
+      "Обоснование",
+    ],
+    columns: [
+      "norm_id",
+      "work_name",
+      "res_category",
+      // Исправлено здесь: преобразуем к числу перед вызовом toFixed
+      (item: any) => {
+        const val = Number(item.coeff_k);
+        return isNaN(val) ? "0.0000" : val.toFixed(4);
+      },
+      (item: any) => item.rationale || "—",
+    ],
+    idField: "norm_id",
+  };
+
+  const laborConfig = {
+    title: "Справочник норм затрат труда рабочих по специальностям",
+    headers: ["ID", "Вид работ", "Специальность", "Разряд", "Норма (чел-ч)"],
+    columns: ["norm_id", "work_name", "specialty", "rank", "manhour_norm"],
+    idField: "norm_id",
+  };
+
+  const currentConfig = activeTab === "mtr" ? mtrConfig : laborConfig;
+  const currentData = activeTab === "mtr" ? mtrNorms : laborNorms;
+
   return (
     <div className={styles.container}>
-      {/* Вкладки переключения */}
+      {/* Шапка вкладок */}
       <div className={styles.tabsHeader}>
         <button
-          onClick={() => handleTabChange("materials")}
+          onClick={() => handleTabChange("mtr")}
           className={
-            activeTab === "materials"
-              ? styles.activeTabButton
-              : styles.tabButton
+            activeTab === "mtr" ? styles.activeTabButton : styles.tabButton
           }
         >
-          Нормы расхода материалов
+          Нормы расхода МТР
         </button>
         <button
           onClick={() => handleTabChange("labor")}
@@ -188,37 +193,34 @@ export const Directories: React.FC = () => {
             activeTab === "labor" ? styles.activeTabButton : styles.tabButton
           }
         >
-          Трудовые нормативы
+          Трудовые нормы
         </button>
       </div>
 
-      {/* Панель инструментов сверху */}
+      {/* Панель инструментов */}
       <div className={styles.toolbar}>
         <button onClick={handleOpenAdd} className={styles.addBtn}>
-          <Plus size={14} />
-          Добавить новую норму
+          <Plus size={14} /> Добавить строку
         </button>
         <button
           onClick={handleOpenEditSelected}
           disabled={selectedId === null}
           className={styles.editBtn}
         >
-          <Edit3 size={14} />
-          Изменить
+          <Edit3 size={14} /> Изменить
         </button>
         <button
           onClick={handleDeleteSelected}
           disabled={selectedId === null}
           className={styles.deleteBtn}
         >
-          <Trash2 size={14} />
-          Удалить выбранную
+          <Trash2 size={14} /> Удалить
         </button>
         {selectedId !== null && (
           <span
             style={{
               fontSize: "0.75rem",
-              color: "#64748b",
+              color: "#94a3b8",
               marginLeft: "auto",
             }}
           >
@@ -227,120 +229,93 @@ export const Directories: React.FC = () => {
         )}
       </div>
 
-      {/* ОТОБРАЖЕНИЕ ТАБЛИЦ ЧЕРЕЗ УНИВЕРСАЛЬНЫЙ КОМПОНЕНТ DATATABLE */}
+      {/* Таблица */}
+      <div className={styles.content}>
+        {loading ? (
+          <div className={styles.loader}>Загрузка нормативных данных...</div>
+        ) : (
+          <DataTable
+            title={currentConfig.title}
+            headers={currentConfig.headers}
+            data={currentData || []}
+            columns={currentConfig.columns}
+            idField={currentConfig.idField}
+            selectedId={selectedId}
+            onRowClick={handleRowClick}
+          />
+        )}
+      </div>
 
-      {activeTab === "materials" && (
-        <DataTable
-          title="Нормы расхода материалов"
-          headers={[
-            "ID",
-            "Категория ресурса",
-            "Применимый вид работ",
-            "Коэффициент расхода (К)",
-            "Обоснование",
-          ]}
-          data={materials}
-          columns={[
-            "Norm_ID",
-            "Res_Category",
-            "Work_Type",
-            "Coeff_K",
-            (item) => item.Rationale || "—",
-          ]}
-          idField="Norm_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {activeTab === "labor" && (
-        <DataTable
-          title="Трудовые нормативы и специальности"
-          headers={[
-            "ID",
-            "Вид работ / Категория",
-            "Специальность",
-            "Разряд",
-            "Норма (чел-час/ед)",
-          ]}
-          data={labor}
-          columns={[
-            "Norm_ID",
-            "Work_Type",
-            "Specialty",
-            "Rank",
-            "ManHour_Norm",
-          ]}
-          idField="Norm_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {/* ВСПЛЫВАЮЩЕЕ МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ */}
+      {/* Модальное окно */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalCard}>
             <div className={styles.modalHeader}>
               <h4>
-                {isEditMode ? "Редактирование нормы" : "Добавление новой нормы"}
+                {isEditMode
+                  ? "Редактирование норматива"
+                  : "Добавление нового норматива"}
               </h4>
             </div>
             <form onSubmit={handleSave}>
               <div className={styles.modalBody}>
-                {activeTab === "materials" ? (
+                {/* Форма для норм расхода МТР */}
+                {activeTab === "mtr" && (
                   <>
                     <div className={styles.formGroup}>
-                      <label>Категория ресурса</label>
+                      <label>Наименование вида работ</label>
                       <input
                         type="text"
                         required
-                        value={matCategory}
-                        onChange={(e) => setMatCategory(e.target.value)}
-                        placeholder="Например, Бетон тяжелый"
+                        value={mtrWorkName}
+                        onChange={(e) => setMtrWorkName(e.target.value)}
+                        placeholder="Например, Разработка грунта"
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Вид работ / Технология</label>
+                      <label>Категория ресурса / Материал</label>
                       <input
                         type="text"
                         required
-                        value={matWorkType}
-                        onChange={(e) => setMatWorkType(e.target.value)}
-                        placeholder="Например, Общестроительные"
+                        value={mtrResCategory}
+                        onChange={(e) => setMtrResCategory(e.target.value)}
+                        placeholder="Например, Песок строительный"
                       />
                     </div>
                     <div className={styles.formGroup}>
                       <label>Коэффициент расхода (К)</label>
                       <input
                         type="number"
-                        step="0.01"
+                        step="0.0001"
                         required
-                        value={matCoeff}
-                        onChange={(e) => setMatCoeff(e.target.value)}
-                        placeholder="1.02"
+                        value={mtrCoeffK}
+                        onChange={(e) => setMtrCoeffK(e.target.value)}
+                        placeholder="Например, 1.04"
                       />
                     </div>
                     <div className={styles.formGroup}>
                       <label>Обоснование</label>
                       <input
                         type="text"
-                        value={matRationale}
-                        onChange={(e) => setMatRationale(e.target.value)}
-                        placeholder="Например, ГОСТ или регламент"
+                        value={mtrRationale}
+                        onChange={(e) => setMtrRationale(e.target.value)}
+                        placeholder="Например, ГЭСН 01-01-001"
                       />
                     </div>
                   </>
-                ) : (
+                )}
+
+                {/* Форма для норм труда */}
+                {activeTab === "labor" && (
                   <>
                     <div className={styles.formGroup}>
-                      <label>Вид работ / Категория</label>
+                      <label>Наименование вида работ</label>
                       <input
                         type="text"
                         required
-                        value={labWorkType}
-                        onChange={(e) => setLabWorkType(e.target.value)}
-                        placeholder="Например, Общестроительные"
+                        value={labWorkName}
+                        onChange={(e) => setLabWorkName(e.target.value)}
+                        placeholder="Например, Кирпичная кладка"
                       />
                     </div>
                     <div className={styles.formGroup}>
@@ -350,34 +325,38 @@ export const Directories: React.FC = () => {
                         required
                         value={labSpecialty}
                         onChange={(e) => setLabSpecialty(e.target.value)}
-                        placeholder="Например, Арматурщик"
+                        placeholder="Например, Каменщик"
                       />
                     </div>
                     <div className={styles.formGroup}>
                       <label>Разряд</label>
-                      <input
-                        type="number"
-                        required
+                      <select
                         value={labRank}
                         onChange={(e) => setLabRank(e.target.value)}
-                        placeholder="4"
-                      />
+                      >
+                        <option value="1">1 разряд</option>
+                        <option value="2">2 разряд</option>
+                        <option value="3">3 разряд</option>
+                        <option value="4">4 разряд</option>
+                        <option value="5">5 разряд</option>
+                        <option value="6">6 разряд</option>
+                      </select>
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Норма (чел-час/ед)</label>
+                      <label>Норма затрат труда (чел.-ч)</label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="0.01"
                         required
-                        value={labNorm}
-                        onChange={(e) => setLabNorm(e.target.value)}
-                        placeholder="20.0"
+                        value={labManhourNorm}
+                        onChange={(e) => setLabManhourNorm(e.target.value)}
+                        placeholder="Например, 0.85"
                       />
                     </div>
                   </>
                 )}
 
-                {/* Кнопки управления */}
+                {/* Подвал с кнопками */}
                 <div className={styles.modalFooter}>
                   <button
                     type="button"

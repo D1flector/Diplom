@@ -1,4 +1,3 @@
-// 1. Роли пользователей
 export type UserRole = "Инженер ПТО" | "Руководитель проекта" | "Администратор";
 
 export interface User {
@@ -6,127 +5,134 @@ export interface User {
   role: UserRole;
 }
 
-// 2. Исходные параметры проекта (ППР)
 export interface PPRData {
-  PPR_ID: number;
-  PPR_Section: string;
-  Object_Name: string;
-  Parameter: string;
-  Value: string;
+  ppr_id: number;
+  object_name: string;
+  responsible_person: string;
+  start_date_smr: string;
+  technology_type: string;
+  ppr_section?: string;
+  parameter?: string;
+  value?: string;
 }
 
-// 3. Ведомость видов работ
 export interface WorkType {
-  WorkType_ID: number;
-  Work_name: string;
-  Complexity: number;
-  Specialists: string;
-  Staff_Qty: number;
-  Duration: number;
+  work_type_id: number;
+  work_name: string;
+  complexity: number;
+  specialists: string;
+  staff_qty: number;
+  duration: number;
 }
 
-// 4. Директивные сроки
 export interface ClientDeadline {
-  Deadline_ID: number;
-  Stage_name: string;
-  Start_date: string;
-  End_date: string;
-  Rigidity: string;
-  Comment: string | null;
+  deadline_id: number;
+  ppr_id: number;
+  object_name?: string;
+  stage_name: string;
+  start_date: string;
+  end_date: string;
+  rigidity: string;
+  comment: string | null;
 }
 
-// 5. Ведомость объемов работ (ВОР)
 export interface WorkVolume {
-  Vol_ID: number;
-  Work_name: string;
-  Volume: number;
-  Unit: string;
-  Dependency: string;
-  Duration_Days: number;
+  vol_id: number;
+  ppr_id: number;
+  object_name?: string;
+  work_type_id: number;
+  work_name?: string;
+  volume: number;
+  unit: string;
+  dependency: string;
+  duration_days: number;
 }
 
-// 6. Проектная спецификация материалов
 export interface ProjectSpec {
-  Spec_ID: number;
-  Object_Name: string;
-  Material_Name: string;
-  Characteristics: string | null;
-  Unit: string;
-  Proj_Vol: number;
+  spec_id: number;
+  ppr_id: number;
+  object_name?: string;
+  material_name: string;
+  characteristics: string | null;
+  unit: string;
+  proj_vol: number;
 }
 
-// 7. Справочник норм расхода материалов
 export interface ConsumptionNorm {
-  Norm_ID: number;
-  Res_Category: string;
-  Work_Type: string;
-  Coeff_K: number;
-  Rationale: string | null;
+  norm_id: number;
+  work_type_id: number;
+  work_name?: string;
+  res_category: string;
+  coeff_k: number;
+  rationale: string | null;
 }
 
-// 8. Справочник трудовых норм
 export interface LaborNorm {
-  Norm_ID: number;
-  Work_Type: string;
-  Specialty: string;
-  Rank: number;
-  ManHour_Norm: number;
+  norm_id: number;
+  work_type_id: number;
+  work_name?: string;
+  specialty: string;
+  rank: number;
+  manhour_norm: number;
 }
 
-// 9. Список предложений бригад подрядчиков
 export interface Contractor {
-  Cont_ID: number;
-  Contract_ID: string;
-  Org_Name: string;
-  Contact_Person: string | null;
-  Team_Size: number;
-  Work_Desc: string;
-  Offer_Days: number;
-  Offer_Cost: number;
+  cont_id: number;
+  contract_id: string;
+  org_name: string;
+  contact_person: string | null;
+  team_size: number;
+  work_desc: string;
+  offer_days: number;
+  offer_cost: number;
 }
 
-// 10. Результат Задачи 1: Календарный план
 export interface CalendarPlan {
-  Plan_ID: number;
-  Object_Name: string;
-  Work_Name: string;
-  Total_ManHours: number;
-  Staff_Qty: number;
-  Work_Days: number;
-  Start_Date: string;
-  End_Date: string;
+  plan_id: number;
+  ppr_id: number;
+  object_name?: string;
+  work_type_id: number;
+  work_name?: string;
+  total_manhours: number;
+  staff_qty: number;
+  work_days: number;
+  start_date: string;
+  end_date: string;
 }
 
-// 11. Результат Задачи 2: Ведомость потребности в МТР
 export interface MTRPlan {
-  MTR_ID: number;
-  Object_Name: string;
-  Mat_Name: string;
-  Unit: string;
-  Req_Volume: number;
-  Delivery_Date: string;
-  Stage_Link: string;
+  mtr_id: number;
+  ppr_id: number;
+  object_name?: string;
+  spec_id: number;
+  mat_name?: string;
+  unit: string;
+  req_volume: number;
+  delivery_date: string;
+  stage_link: string;
 }
 
-// 12. Результат Задачи 3: Ведомость потребности в трудовых ресурсах
 export interface LaborPlan {
-  Labor_ID: number;
-  Object_Name: string;
-  Work_Name: string;
-  Specialty: string;
-  Work_Days: number;
-  Total_Hours: number;
-  Staff_Count: number;
+  labor_id: number;
+  ppr_id: number;
+  object_name?: string;
+  work_type_id: number;
+  work_name?: string;
+  specialty: string;
+  work_days: number;
+  total_hours: number;
+  staff_count: number;
 }
 
-// 13. Результат Задачи 4: План расстановки специалистов
 export interface StaffAllocation {
-  Alloc_ID: number;
-  Work_Name: string;
-  Work_Vol_Unit: string;
-  Assigned_Org: string;
-  Final_Days: number;
-  Actual_Start: string;
-  Actual_End: string;
-  Final_Cost: number;
+  alloc_id: number;
+  work_type_id: number;
+  work_name?: string;
+  work_vol_unit: string;
+  cont_id: number | null;
+  assigned_org?: string;
+  final_days: number;
+  actual_start: string;
+  actual_end: string;
+  final_cost: number;
 }

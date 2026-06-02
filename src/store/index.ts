@@ -1,11 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "./auth/authSlice"; // Импортируем из подпапки auth
+import authReducer from "./auth/authSlice";
+import directoryReducer from "./slices/directorySlice";
+import inputsReducer from "./slices/inputsSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    directory: directoryReducer,
+    inputs: inputsReducer,
   },
 });
 
+// Эти типы нужны для файла hooks.ts из Шага 1
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

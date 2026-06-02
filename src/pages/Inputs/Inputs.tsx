@@ -1,23 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Inputs.module.scss";
 import { Plus, Edit3, Trash2 } from "lucide-react";
 import { DataTable } from "../../components/DataTable/DataTable";
-import type {
-  PPRData,
-  WorkType,
-  ClientDeadline,
-  WorkVolume,
-  ProjectSpec,
-  Contractor,
-} from "../../types/entities";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
-  initialPPRData,
-  initialWorkTypes,
-  initialClientDeadlines,
-  initialWorkVolumes,
-  initialProjectSpec,
-  initialContractors,
-} from "../../types/mockData";
+  fetchPprData,
+  addPprData,
+  updatePprData,
+  deletePprData,
+  fetchWorkTypes,
+  addWorkType,
+  updateWorkType,
+  deleteWorkType,
+  fetchClientDeadlines,
+  addClientDeadline,
+  updateClientDeadline,
+  deleteClientDeadline,
+  fetchWorkVolumes,
+  addWorkVolume,
+  updateWorkVolume,
+  deleteWorkVolume,
+  fetchProjectSpecs,
+  addProjectSpec,
+  updateProjectSpec,
+  deleteProjectSpec,
+  fetchContractors,
+  addContractor,
+  updateContractor,
+  deleteContractor,
+} from "../../store/slices/inputsSlice";
 
 type TabType =
   | "ppr"
@@ -30,28 +41,26 @@ type TabType =
 export const Inputs: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("ppr");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const dispatch = useAppDispatch();
 
-  // Стейты списков данных
-  const [pprList, setPprList] = useState<PPRData[]>(initialPPRData);
-  const [workTypes, setWorkTypes] = useState<WorkType[]>(initialWorkTypes);
-  const [deadlines, setDeadlines] = useState<ClientDeadline[]>(
-    initialClientDeadlines,
-  );
-  const [workVolumes, setWorkVolumes] =
-    useState<WorkVolume[]>(initialWorkVolumes);
-  const [projectSpec, setProjectSpec] =
-    useState<ProjectSpec[]>(initialProjectSpec);
-  const [contractors, setContractors] =
-    useState<Contractor[]>(initialContractors);
+  const {
+    pprData,
+    workTypes,
+    clientDeadlines,
+    workVolumes,
+    projectSpecs,
+    contractors,
+    loading,
+  } = useAppSelector((state) => state.inputs);
 
-  // Стейты модального окна
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Поля ввода форм
-  const [pprSection, setPprSection] = useState("");
-  const [pprParam, setPprParam] = useState("");
-  const [pprVal, setPprVal] = useState("");
+  const [pprObjectName, setPprObjectName] = useState("");
+  const [pprResponsiblePerson, setPprResponsiblePerson] = useState("");
+  const [pprStartDateSmr, setPprStartDateSmr] = useState("");
+  const [pprTechnologyType, setPprTechnologyType] = useState("");
 
   const [wtName, setWtName] = useState("");
   const [wtComp, setWtComp] = useState("");
@@ -59,18 +68,21 @@ export const Inputs: React.FC = () => {
   const [wtStaff, setWtStaff] = useState("");
   const [wtDur, setWtDur] = useState("");
 
+  const [cdPprId, setCdPprId] = useState<number | "">("");
   const [cdStage, setCdStage] = useState("");
   const [cdStart, setCdStart] = useState("");
   const [cdEnd, setCdEnd] = useState("");
-  const [cdRigid, setCdRigid] = useState("Высокая");
+  const [cdRigidVal, setCdRigidVal] = useState("Высокая");
   const [cdComment, setCdComment] = useState("");
 
-  const [wvName, setWvName] = useState("");
+  const [wvPprId, setWvPprId] = useState<number | "">("");
+  const [wvWorkTypeId, setWvWorkTypeId] = useState<number | "">("");
   const [wvVol, setWvVol] = useState("");
   const [wvUnit, setWvUnit] = useState("");
   const [wvDep, setWvDep] = useState("Нет");
   const [wvDays, setWvDays] = useState("");
 
+  const [psPprId, setPsPprId] = useState<number | "">("");
   const [psMat, setPsMat] = useState("");
   const [psChar, setPsChar] = useState("");
   const [psUnit, setPsUnit] = useState("");
@@ -84,6 +96,15 @@ export const Inputs: React.FC = () => {
   const [cDays, setCDays] = useState("");
   const [cCost, setCCost] = useState("");
 
+  useEffect(() => {
+    dispatch(fetchPprData());
+    dispatch(fetchWorkTypes());
+    dispatch(fetchClientDeadlines());
+    dispatch(fetchWorkVolumes());
+    dispatch(fetchProjectSpecs());
+    dispatch(fetchContractors());
+  }, [dispatch]);
+
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setSelectedId(null);
@@ -93,50 +114,62 @@ export const Inputs: React.FC = () => {
     setSelectedId(selectedId === id ? null : id);
   };
 
-  // Удаление строки
   const handleDeleteSelected = () => {
     if (selectedId === null) return;
-    if (activeTab === "ppr")
-      setPprList(pprList.filter((i) => i.PPR_ID !== selectedId));
-    if (activeTab === "works")
-      setWorkTypes(workTypes.filter((i) => i.WorkType_ID !== selectedId));
-    if (activeTab === "deadlines")
-      setDeadlines(deadlines.filter((i) => i.Deadline_ID !== selectedId));
-    if (activeTab === "volumes")
-      setWorkVolumes(workVolumes.filter((i) => i.Vol_ID !== selectedId));
-    if (activeTab === "spec")
-      setProjectSpec(projectSpec.filter((i) => i.Spec_ID !== selectedId));
-    if (activeTab === "contractors")
-      setContractors(contractors.filter((i) => i.Cont_ID !== selectedId));
+
+    if (activeTab === "ppr") {
+      dispatch(deletePprData(selectedId));
+    } else if (activeTab === "works") {
+      dispatch(deleteWorkType(selectedId));
+    } else if (activeTab === "deadlines") {
+      dispatch(deleteClientDeadline(selectedId));
+    } else if (activeTab === "volumes") {
+      dispatch(deleteWorkVolume(selectedId));
+    } else if (activeTab === "spec") {
+      dispatch(deleteProjectSpec(selectedId));
+    } else if (activeTab === "contractors") {
+      dispatch(deleteContractor(selectedId));
+    }
+
     setSelectedId(null);
   };
 
-  // Открытие для добавления
   const handleOpenAdd = () => {
     setIsEditMode(false);
     setIsModalOpen(true);
-    setPprSection("");
-    setPprParam("");
-    setPprVal("");
+    setErrorMsg(null);
+
+    setPprObjectName("");
+    setPprResponsiblePerson("");
+    setPprStartDateSmr("");
+    setPprTechnologyType("Последовательная");
+
     setWtName("");
     setWtComp("");
     setWtSpec("");
     setWtStaff("");
     setWtDur("");
+
+    setCdPprId("");
     setCdStage("");
     setCdStart("");
     setCdEnd("");
-    setCdRigid("Высокая");
+    setCdRigidVal("Высокая");
     setCdComment("");
-    setWvName("");
+
+    setWvPprId("");
+    setWvWorkTypeId("");
     setWvVol("");
     setWvUnit("");
     setWvDep("Нет");
     setWvDays("");
+
+    setPsPprId("");
     setPsMat("");
     setPsChar("");
     setPsUnit("");
     setPsVol("");
+
     setCContract("");
     setCName("");
     setCContact("");
@@ -146,281 +179,197 @@ export const Inputs: React.FC = () => {
     setCCost("");
   };
 
-  // Открытие для редактирования
   const handleOpenEditSelected = () => {
     if (selectedId === null) return;
     setIsEditMode(true);
     setIsModalOpen(true);
+    setErrorMsg(null);
 
     if (activeTab === "ppr") {
-      const item = pprList.find((i) => i.PPR_ID === selectedId);
+      const item = pprData.find((i) => i.ppr_id === selectedId);
       if (item) {
-        setPprSection(item.PPR_Section);
-        setPprParam(item.Parameter);
-        setPprVal(item.Value);
+        setPprObjectName(item.object_name);
+        setPprResponsiblePerson(item.responsible_person);
+        setPprStartDateSmr(
+          item.start_date_smr ? item.start_date_smr.substring(0, 10) : "",
+        );
+        setPprTechnologyType(item.technology_type);
       }
     } else if (activeTab === "works") {
-      const item = workTypes.find((i) => i.WorkType_ID === selectedId);
+      const item = workTypes.find((i) => i.work_type_id === selectedId);
       if (item) {
-        setWtName(item.Work_name);
-        setWtComp(item.Complexity.toString());
-        setWtSpec(item.Specialists);
-        setWtStaff(item.Staff_Qty.toString());
-        setWtDur(item.Duration.toString());
+        setWtName(item.work_name);
+        setWtComp(item.complexity.toString());
+        setWtSpec(item.specialists);
+        setWtStaff(item.staff_qty.toString());
+        setWtDur(item.duration.toString());
       }
     } else if (activeTab === "deadlines") {
-      const item = deadlines.find((i) => i.Deadline_ID === selectedId);
+      const item = clientDeadlines.find((i) => i.deadline_id === selectedId);
       if (item) {
-        setCdStage(item.Stage_name);
-        setCdStart(item.Start_date);
-        setCdEnd(item.End_date);
-        setCdRigid(item.Rigidity);
-        setCdComment(item.Comment || "");
+        setCdPprId(item.ppr_id);
+        setCdStage(item.stage_name);
+        setCdStart(item.start_date ? item.start_date.substring(0, 10) : "");
+        setCdEnd(item.end_date ? item.end_date.substring(0, 10) : "");
+        setCdRigidVal(item.rigidity);
+        setCdComment(item.comment || "");
       }
     } else if (activeTab === "volumes") {
-      const item = workVolumes.find((i) => i.Vol_ID === selectedId);
+      const item = workVolumes.find((i) => i.vol_id === selectedId);
       if (item) {
-        setWvName(item.Work_name);
-        setWvVol(item.Volume.toString());
-        setWvUnit(item.Unit);
-        setWvDep(item.Dependency || "Нет");
-        setWvDays(item.Duration_Days.toString());
+        setWvPprId(item.ppr_id);
+        setWvWorkTypeId(item.work_type_id);
+        setWvVol(item.volume.toString());
+        setWvUnit(item.unit);
+        setWvDep(item.dependency || "Нет");
+        setWvDays(item.duration_days.toString());
       }
     } else if (activeTab === "spec") {
-      const item = projectSpec.find((i) => i.Spec_ID === selectedId);
+      const item = projectSpecs.find((i) => i.spec_id === selectedId);
       if (item) {
-        setPsMat(item.Material_Name);
-        setPsChar(item.Characteristics || "");
-        setPsUnit(item.Unit);
-        setPsVol(item.Proj_Vol.toString());
+        setPsPprId(item.ppr_id);
+        setPsMat(item.material_name);
+        setPsChar(item.characteristics || "");
+        setPsUnit(item.unit);
+        setPsVol(item.proj_vol.toString());
       }
     } else if (activeTab === "contractors") {
-      const item = contractors.find((i) => i.Cont_ID === selectedId);
+      const item = contractors.find((i) => i.cont_id === selectedId);
       if (item) {
-        setCContract(item.Contract_ID);
-        setCName(item.Org_Name);
-        setCContact(item.Contact_Person || "");
-        setCSize(item.Team_Size.toString());
-        setCDesc(item.Work_Desc);
-        setCDays(item.Offer_Days.toString());
-        setCCost(item.Offer_Cost.toString());
+        setCContract(item.contract_id);
+        setCName(item.org_name);
+        setCContact(item.contact_person || "");
+        setCSize(item.team_size.toString());
+        setCDesc(item.work_desc);
+        setCDays(item.offer_days.toString());
+        setCCost(item.offer_cost.toString());
       }
     }
   };
 
-  // Сохранение
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
 
-    if (activeTab === "ppr") {
-      if (isEditMode && selectedId !== null) {
-        setPprList(
-          pprList.map((i) =>
-            i.PPR_ID === selectedId
-              ? {
-                  PPR_ID: selectedId,
-                  PPR_Section: pprSection,
-                  Object_Name: "ЖК «Северный»",
-                  Parameter: pprParam,
-                  Value: pprVal,
-                }
-              : i,
-          ),
-        );
-      } else {
-        const newId =
-          pprList.length > 0
-            ? Math.max(...pprList.map((i) => i.PPR_ID)) + 1
-            : 1;
-        setPprList([
-          ...pprList,
-          {
-            PPR_ID: newId,
-            PPR_Section: pprSection,
-            Object_Name: "ЖК «Северный»",
-            Parameter: pprParam,
-            Value: pprVal,
-          },
-        ]);
+    try {
+      if (activeTab === "ppr") {
+        const payload = {
+          object_name: pprObjectName,
+          responsible_person: pprResponsiblePerson,
+          start_date_smr: pprStartDateSmr,
+          technology_type: pprTechnologyType,
+        };
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updatePprData({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addPprData(payload)).unwrap();
+        }
+      } else if (activeTab === "works") {
+        const payload = {
+          work_name: wtName,
+          complexity: parseFloat(wtComp) || 1.0,
+          specialists: wtSpec,
+          staff_qty: parseInt(wtStaff) || 1,
+          duration: parseInt(wtDur) || 1,
+        };
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateWorkType({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addWorkType(payload)).unwrap();
+        }
+      } else if (activeTab === "deadlines") {
+        if (!cdPprId)
+          throw new Error("Необходимо выбрать наименование объекта");
+        if (cdStart && cdEnd && new Date(cdEnd) < new Date(cdStart)) {
+          throw new Error("Дата окончания не может быть раньше даты начала");
+        }
+        const payload = {
+          ppr_id: Number(cdPprId),
+          stage_name: cdStage,
+          start_date: cdStart,
+          end_date: cdEnd,
+          rigidity: cdRigidVal,
+          comment: cdComment || null,
+        };
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateClientDeadline({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addClientDeadline(payload)).unwrap();
+        }
+      } else if (activeTab === "volumes") {
+        if (!wvPprId)
+          throw new Error("Необходимо выбрать наименование объекта");
+        if (!wvWorkTypeId)
+          throw new Error("Необходимо выбрать наименование вида работ");
+        const payload = {
+          ppr_id: Number(wvPprId),
+          work_type_id: Number(wvWorkTypeId),
+          volume: parseFloat(wvVol) || 0,
+          unit: wvUnit,
+          dependency: wvDep,
+          duration_days: parseInt(wvDays) || 1,
+        };
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateWorkVolume({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addWorkVolume(payload)).unwrap();
+        }
+      } else if (activeTab === "spec") {
+        if (!psPprId)
+          throw new Error("Необходимо выбрать наименование объекта");
+        const payload = {
+          ppr_id: Number(psPprId),
+          material_name: psMat,
+          characteristics: psChar || null,
+          unit: psUnit,
+          proj_vol: parseFloat(psVol) || 0,
+        };
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateProjectSpec({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addProjectSpec(payload)).unwrap();
+        }
+      } else if (activeTab === "contractors") {
+        const payload = {
+          contract_id: cContract,
+          org_name: cName,
+          contact_person: cContact || null,
+          team_size: parseInt(cSize) || 1,
+          work_desc: cDesc,
+          offer_days: parseInt(cDays) || 1,
+          offer_cost: parseFloat(cCost) || 0,
+        };
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateContractor({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addContractor(payload)).unwrap();
+        }
       }
-    } else if (activeTab === "works") {
-      if (isEditMode && selectedId !== null) {
-        setWorkTypes(
-          workTypes.map((i) =>
-            i.WorkType_ID === selectedId
-              ? {
-                  WorkType_ID: selectedId,
-                  Work_name: wtName,
-                  Complexity: parseFloat(wtComp) || 1.0,
-                  Specialists: wtSpec,
-                  Staff_Qty: parseInt(wtStaff) || 1,
-                  Duration: parseInt(wtDur) || 1,
-                }
-              : i,
-          ),
-        );
-      } else {
-        const newId =
-          workTypes.length > 0
-            ? Math.max(...workTypes.map((i) => i.WorkType_ID)) + 1
-            : 1;
-        setWorkTypes([
-          ...workTypes,
-          {
-            WorkType_ID: newId,
-            Work_name: wtName,
-            Complexity: parseFloat(wtComp) || 1.0,
-            Specialists: wtSpec,
-            Staff_Qty: parseInt(wtStaff) || 1,
-            Duration: parseInt(wtDur) || 1,
-          },
-        ]);
-      }
-    } else if (activeTab === "deadlines") {
-      if (isEditMode && selectedId !== null) {
-        setDeadlines(
-          deadlines.map((i) =>
-            i.Deadline_ID === selectedId
-              ? {
-                  Deadline_ID: selectedId,
-                  Stage_name: cdStage,
-                  Start_date: cdStart,
-                  End_date: cdEnd,
-                  Rigidity: cdRigid,
-                  Comment: cdComment || null,
-                }
-              : i,
-          ),
-        );
-      } else {
-        const newId =
-          deadlines.length > 0
-            ? Math.max(...deadlines.map((i) => i.Deadline_ID)) + 1
-            : 1;
-        setDeadlines([
-          ...deadlines,
-          {
-            Deadline_ID: newId,
-            Stage_name: cdStage,
-            Start_date: cdStart,
-            End_date: cdEnd,
-            Rigidity: cdRigid,
-            Comment: cdComment || null,
-          },
-        ]);
-      }
-    } else if (activeTab === "volumes") {
-      if (isEditMode && selectedId !== null) {
-        setWorkVolumes(
-          workVolumes.map((i) =>
-            i.Vol_ID === selectedId
-              ? {
-                  Vol_ID: selectedId,
-                  Work_name: wvName,
-                  Volume: parseFloat(wvVol) || 0,
-                  Unit: wvUnit,
-                  Dependency: wvDep,
-                  Duration_Days: parseInt(wvDays) || 1,
-                }
-              : i,
-          ),
-        );
-      } else {
-        const newId =
-          workVolumes.length > 0
-            ? Math.max(...workVolumes.map((i) => i.Vol_ID)) + 1
-            : 1;
-        setWorkVolumes([
-          ...workVolumes,
-          {
-            Vol_ID: newId,
-            Work_name: wvName,
-            Volume: parseFloat(wvVol) || 0,
-            Unit: wvUnit,
-            Dependency: wvDep,
-            Duration_Days: parseInt(wvDays) || 1,
-          },
-        ]);
-      }
-    } else if (activeTab === "spec") {
-      if (isEditMode && selectedId !== null) {
-        setProjectSpec(
-          projectSpec.map((i) =>
-            i.Spec_ID === selectedId
-              ? {
-                  Spec_ID: selectedId,
-                  Object_Name: "ЖК «Северный»",
-                  Material_Name: psMat,
-                  Characteristics: psChar || null,
-                  Unit: psUnit,
-                  Proj_Vol: parseFloat(psVol) || 0,
-                }
-              : i,
-          ),
-        );
-      } else {
-        const newId =
-          projectSpec.length > 0
-            ? Math.max(...projectSpec.map((i) => i.Spec_ID)) + 1
-            : 1;
-        setProjectSpec([
-          ...projectSpec,
-          {
-            Spec_ID: newId,
-            Object_Name: "ЖК «Северный»",
-            Material_Name: psMat,
-            Characteristics: psChar || null,
-            Unit: psUnit,
-            Proj_Vol: parseFloat(psVol) || 0,
-          },
-        ]);
-      }
-    } else if (activeTab === "contractors") {
-      if (isEditMode && selectedId !== null) {
-        setContractors(
-          contractors.map((i) =>
-            i.Cont_ID === selectedId
-              ? {
-                  Cont_ID: selectedId,
-                  Contract_ID: cContract,
-                  Org_Name: cName,
-                  Contact_Person: cContact || null,
-                  Team_Size: parseInt(cSize) || 1,
-                  Work_Desc: cDesc,
-                  Offer_Days: parseInt(cDays) || 1,
-                  Offer_Cost: parseFloat(cCost) || 0,
-                }
-              : i,
-          ),
-        );
-      } else {
-        const newId =
-          contractors.length > 0
-            ? Math.max(...contractors.map((i) => i.Cont_ID)) + 1
-            : 1;
-        setContractors([
-          ...contractors,
-          {
-            Cont_ID: newId,
-            Contract_ID: cContract,
-            Org_Name: cName,
-            Contact_Person: cContact || null,
-            Team_Size: parseInt(cSize) || 1,
-            Work_Desc: cDesc,
-            Offer_Days: parseInt(cDays) || 1,
-            Offer_Cost: parseFloat(cCost) || 0,
-          },
-        ]);
-      }
+
+      setIsModalOpen(false);
+      setSelectedId(null);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(
+        err.message || "Произошла ошибка базы данных при сохранении.",
+      );
     }
-
-    setIsModalOpen(false);
-    setSelectedId(null);
   };
 
   return (
     <div className={styles.container}>
-      {/* 6 Вкладок переключения */}
       <div className={styles.tabsHeader}>
         <button
           onClick={() => handleTabChange("ppr")}
@@ -476,7 +425,6 @@ export const Inputs: React.FC = () => {
         </button>
       </div>
 
-      {/* Панель инструментов */}
       <div className={styles.toolbar}>
         <button onClick={handleOpenAdd} className={styles.addBtn}>
           <Plus size={14} /> Добавить строку
@@ -508,165 +456,203 @@ export const Inputs: React.FC = () => {
         )}
       </div>
 
-      {/* РЕНДЕРИНГ ТАБЛИЦ ЧЕРЕЗ УНИВЕРСАЛЬНЫЙ КОМПОНЕНТ */}
+      {loading ? (
+        <div
+          className={styles.loader}
+          style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}
+        >
+          Загрузка документов проекта...
+        </div>
+      ) : (
+        <>
+          {activeTab === "ppr" && (
+            <DataTable
+              title="Ведомость параметров ППР"
+              headers={[
+                "ID",
+                "Наименование объекта",
+                "Ответственное лицо",
+                "Дата начала СМР",
+                "Технология",
+              ]}
+              data={pprData || []}
+              columns={[
+                "ppr_id",
+                "object_name",
+                "responsible_person",
+                (item: any) =>
+                  item.start_date_smr
+                    ? new Date(item.start_date_smr).toLocaleDateString()
+                    : "—",
+                "technology_type",
+              ]}
+              idField="ppr_id"
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+            />
+          )}
 
-      {activeTab === "ppr" && (
-        <DataTable
-          title="Ведомость параметров ППР"
-          headers={["ID", "Раздел ППР", "Объект", "Параметр", "Значение"]}
-          data={pprList}
-          columns={[
-            "PPR_ID",
-            "PPR_Section",
-            "Object_Name",
-            "Parameter",
-            "Value",
-          ]}
-          idField="PPR_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
+          {activeTab === "works" && (
+            <DataTable
+              title="Договорная ведомость видов работ"
+              headers={[
+                "ID",
+                "Вид работ",
+                "Сложность",
+                "Требуемые специалисты",
+                "Кол-во человек",
+                "Срок",
+              ]}
+              data={workTypes || []}
+              columns={[
+                "work_type_id",
+                "work_name",
+                (item: any) =>
+                  item.complexity
+                    ? (Number(item.complexity) || 1.0).toFixed(2)
+                    : "—",
+                "specialists",
+                (item: any) =>
+                  item.staff_qty ? `${item.staff_qty} чел.` : "—",
+                (item: any) => (item.duration ? `${item.duration} дней` : "—"),
+              ]}
+              idField="work_type_id"
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+            />
+          )}
+
+          {activeTab === "deadlines" && (
+            <DataTable
+              title="Требования заказчика по срокам"
+              headers={[
+                "ID",
+                "Наименование объекта",
+                "Этап проекта",
+                "Дата начала",
+                "Дата окончания",
+                "Жесткость",
+                "Комментарий",
+              ]}
+              data={clientDeadlines || []}
+              columns={[
+                "deadline_id",
+                (item: any) => item.object_name || "—",
+                "stage_name",
+                (item: any) =>
+                  item.start_date
+                    ? new Date(item.start_date).toLocaleDateString()
+                    : "—",
+                (item: any) =>
+                  item.end_date
+                    ? new Date(item.end_date).toLocaleDateString()
+                    : "—",
+                "rigidity",
+                (item: any) => item.comment || "—",
+              ]}
+              idField="deadline_id"
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+            />
+          )}
+
+          {activeTab === "volumes" && (
+            <DataTable
+              title="Ведомость объемов работ (ВОР)"
+              headers={[
+                "ID",
+                "Наименование объекта",
+                "Наименование вида работ",
+                "Объем",
+                "Ед. изм.",
+                "Зависимость",
+                "Срок",
+              ]}
+              data={workVolumes || []}
+              columns={[
+                "vol_id",
+                (item: any) => item.object_name || "—",
+                (item: any) => item.work_name || "—",
+                "volume",
+                "unit",
+                "dependency",
+                (item: any) =>
+                  item.duration_days ? `${item.duration_days} дней` : "—",
+              ]}
+              idField="vol_id"
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+            />
+          )}
+
+          {activeTab === "spec" && (
+            <DataTable
+              title="Проектная спецификация материалов"
+              headers={[
+                "ID",
+                "Наименование объекта",
+                "Наименование ресурса",
+                "Характеристика",
+                "Ед. изм.",
+                "Объем по проекту",
+              ]}
+              data={projectSpecs || []}
+              columns={[
+                "spec_id",
+                (item: any) => item.object_name || "—",
+                "material_name",
+                (item: any) => item.characteristics || "—",
+                "unit",
+                "proj_vol",
+              ]}
+              idField="spec_id"
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+            />
+          )}
+
+          {activeTab === "contractors" && (
+            <DataTable
+              title="Список предложений подрядных организаций"
+              headers={[
+                "ID",
+                "№ Договора",
+                "Название Подрядчика",
+                "Контактное Лицо",
+                "Численность бригады",
+                "Описание работ",
+                "Срок выполнения",
+                "Стоимость Работ",
+              ]}
+              data={contractors || []}
+              columns={[
+                "cont_id",
+                "contract_id",
+                "org_name",
+                (item: any) => item.contact_person || "—",
+                (item: any) =>
+                  item.team_size ? `${item.team_size} чел.` : "—",
+                "work_desc",
+                (item: any) =>
+                  item.offer_days ? `${item.offer_days} дней` : "—",
+                (item: any) => {
+                  const cost = Number(item.offer_cost);
+                  if (!item.offer_cost || isNaN(cost)) return "—";
+                  return (
+                    <span style={{ color: "#3b82f6", fontWeight: 600 }}>
+                      {cost.toLocaleString()} руб.
+                    </span>
+                  );
+                },
+              ]}
+              idField="cont_id"
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+            />
+          )}
+        </>
       )}
 
-      {activeTab === "works" && (
-        <DataTable
-          title="Договорная ведомость видов работ"
-          headers={[
-            "ID",
-            "Вид работ",
-            "Сложность",
-            "Требуемые специалисты",
-            "Кол-во человек",
-            "Срок",
-          ]}
-          data={workTypes}
-          columns={[
-            "WorkType_ID",
-            "Work_name",
-            (item) => item.Complexity.toFixed(1), // кастомный рендерер сложности
-            "Specialists",
-            (item) => `${item.Staff_Qty} чел.`,
-            (item) => `${item.Duration} дней`,
-          ]}
-          idField="WorkType_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {activeTab === "deadlines" && (
-        <DataTable
-          title="Требования заказчика по срокам"
-          headers={[
-            "ID",
-            "Этап проекта",
-            "Дата начала",
-            "Дата окончания",
-            "Жесткость",
-            "Комментарий",
-          ]}
-          data={deadlines}
-          columns={[
-            "Deadline_ID",
-            "Stage_name",
-            "Start_date",
-            "End_date",
-            "Rigidity",
-            (item) => item.Comment || "—",
-          ]}
-          idField="Deadline_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {activeTab === "volumes" && (
-        <DataTable
-          title="Ведомость объемов работ (ВОР)"
-          headers={[
-            "ID",
-            "Наименование вида работ",
-            "Объем",
-            "Ед. изм.",
-            "Зависимость",
-            "Срок",
-          ]}
-          data={workVolumes}
-          columns={[
-            "Vol_ID",
-            "Work_name",
-            "Volume",
-            "Unit",
-            "Dependency",
-            (item) => `${item.Duration_Days} дней`,
-          ]}
-          idField="Vol_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {activeTab === "spec" && (
-        <DataTable
-          title="Проектная спецификация материалов"
-          headers={[
-            "ID",
-            "Наименование объекта",
-            "Наименование ресурса",
-            "Характеристика",
-            "Ед. изм.",
-            "Объем по проекту",
-          ]}
-          data={projectSpec}
-          columns={[
-            "Spec_ID",
-            "Object_Name",
-            "Material_Name",
-            (item) => item.Characteristics || "—",
-            "Unit",
-            "Proj_Vol",
-          ]}
-          idField="Spec_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {activeTab === "contractors" && (
-        <DataTable
-          title="Список предложений подрядных организаций"
-          headers={[
-            "ID",
-            "№ Договора",
-            "Название Подрядчика",
-            "Контактное Лицо",
-            "Численность бригады",
-            "Описание работ",
-            "Срок выполнения",
-            "Стоимость Работ",
-          ]}
-          data={contractors}
-          columns={[
-            "Cont_ID",
-            "Contract_ID",
-            "Org_Name",
-            (item) => item.Contact_Person || "—",
-            (item) => `${item.Team_Size} чел.`,
-            "Work_Desc",
-            "Offer_Days",
-            (item) => (
-              <span style={{ color: "#3b82f6", fontWeight: 600 }}>
-                {item.Offer_Cost.toLocaleString()} руб.
-              </span>
-            ),
-          ]}
-          idField="Cont_ID"
-          selectedId={selectedId}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      {/* ВСПЛЫВАЮЩЕЕ МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalCard}>
@@ -679,43 +665,67 @@ export const Inputs: React.FC = () => {
             </div>
             <form onSubmit={handleSave}>
               <div className={styles.modalBody}>
-                {/* Поля для ППР */}
+                {errorMsg && (
+                  <div
+                    style={{
+                      color: "#ef4444",
+                      backgroundColor: "#fef2f2",
+                      padding: "0.75rem",
+                      borderRadius: "0.375rem",
+                      marginBottom: "1rem",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    <strong>Ошибка:</strong> {errorMsg}
+                  </div>
+                )}
+
                 {activeTab === "ppr" && (
                   <>
                     <div className={styles.formGroup}>
-                      <label>Раздел ППР</label>
+                      <label>Наименование объекта</label>
                       <input
                         type="text"
                         required
-                        value={pprSection}
-                        onChange={(e) => setPprSection(e.target.value)}
-                        placeholder="Например, Сроки"
+                        value={pprObjectName}
+                        onChange={(e) => setPprObjectName(e.target.value)}
+                        placeholder="Например, ЖК «Северный»"
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Параметр</label>
+                      <label>Ответственное лицо</label>
                       <input
                         type="text"
                         required
-                        value={pprParam}
-                        onChange={(e) => setPprParam(e.target.value)}
-                        placeholder="Например, Дата начала СМР"
+                        value={pprResponsiblePerson}
+                        onChange={(e) =>
+                          setPprResponsiblePerson(e.target.value)
+                        }
+                        placeholder="Например, Иванов И.И."
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Значение</label>
+                      <label>Дата начала СМР</label>
+                      <input
+                        type="date"
+                        required
+                        value={pprStartDateSmr}
+                        onChange={(e) => setPprStartDateSmr(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Тип технологии</label>
                       <input
                         type="text"
                         required
-                        value={pprVal}
-                        onChange={(e) => setPprVal(e.target.value)}
-                        placeholder="2026-03-20"
+                        value={pprTechnologyType}
+                        onChange={(e) => setPprTechnologyType(e.target.value)}
+                        placeholder="Например, Последовательная"
                       />
                     </div>
                   </>
                 )}
 
-                {/* Поля для Видов работ */}
                 {activeTab === "works" && (
                   <>
                     <div className={styles.formGroup}>
@@ -732,11 +742,12 @@ export const Inputs: React.FC = () => {
                       <label>Сложность (коэф.)</label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="0.01"
+                        min="0"
                         required
                         value={wtComp}
                         onChange={(e) => setWtComp(e.target.value)}
-                        placeholder="1.5"
+                        placeholder="1.50"
                       />
                     </div>
                     <div className={styles.formGroup}>
@@ -753,6 +764,7 @@ export const Inputs: React.FC = () => {
                       <label>Кол-во человек</label>
                       <input
                         type="number"
+                        min="1"
                         required
                         value={wtStaff}
                         onChange={(e) => setWtStaff(e.target.value)}
@@ -763,6 +775,7 @@ export const Inputs: React.FC = () => {
                       <label>Предварительный срок (дней)</label>
                       <input
                         type="number"
+                        min="1"
                         required
                         value={wtDur}
                         onChange={(e) => setWtDur(e.target.value)}
@@ -772,9 +785,25 @@ export const Inputs: React.FC = () => {
                   </>
                 )}
 
-                {/* Поля для Директивных сроков */}
                 {activeTab === "deadlines" && (
                   <>
+                    <div className={styles.formGroup}>
+                      <label>Наименование объекта</label>
+                      <select
+                        required
+                        value={cdPprId}
+                        onChange={(e) =>
+                          setCdPprId(Number(e.target.value) || "")
+                        }
+                      >
+                        <option value="">-- Выберите объект --</option>
+                        {pprData.map((ppr) => (
+                          <option key={ppr.ppr_id} value={ppr.ppr_id}>
+                            {ppr.object_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className={styles.formGroup}>
                       <label>Этап проекта</label>
                       <input
@@ -806,8 +835,8 @@ export const Inputs: React.FC = () => {
                     <div className={styles.formGroup}>
                       <label>Жесткость срока</label>
                       <select
-                        value={cdRigid}
-                        onChange={(e) => setCdRigid(e.target.value)}
+                        value={cdRigidVal}
+                        onChange={(e) => setCdRigidVal(e.target.value)}
                       >
                         <option value="Высокая">Высокая</option>
                         <option value="Низкая">Низкая</option>
@@ -825,23 +854,48 @@ export const Inputs: React.FC = () => {
                   </>
                 )}
 
-                {/* Поля для Ведомости объемов (ВОР) */}
                 {activeTab === "volumes" && (
                   <>
                     <div className={styles.formGroup}>
-                      <label>Наименование вида работ</label>
-                      <input
-                        type="text"
+                      <label>Наименование объекта</label>
+                      <select
                         required
-                        value={wvName}
-                        onChange={(e) => setWvName(e.target.value)}
-                        placeholder="Общестроительные"
-                      />
+                        value={wvPprId}
+                        onChange={(e) =>
+                          setWvPprId(Number(e.target.value) || "")
+                        }
+                      >
+                        <option value="">-- Выберите объект --</option>
+                        {pprData.map((ppr) => (
+                          <option key={ppr.ppr_id} value={ppr.ppr_id}>
+                            {ppr.object_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Наименование вида работ</label>
+                      <select
+                        required
+                        value={wvWorkTypeId}
+                        onChange={(e) =>
+                          setWvWorkTypeId(Number(e.target.value) || "")
+                        }
+                      >
+                        <option value="">-- Выберите вид работ --</option>
+                        {workTypes.map((wt) => (
+                          <option key={wt.work_type_id} value={wt.work_type_id}>
+                            {wt.work_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className={styles.formGroup}>
                       <label>Объем</label>
                       <input
                         type="number"
+                        step="0.01"
+                        min="0"
                         required
                         value={wvVol}
                         onChange={(e) => setWvVol(e.target.value)}
@@ -872,6 +926,7 @@ export const Inputs: React.FC = () => {
                       <label>Срок (дней)</label>
                       <input
                         type="number"
+                        min="1"
                         required
                         value={wvDays}
                         onChange={(e) => setWvDays(e.target.value)}
@@ -881,9 +936,25 @@ export const Inputs: React.FC = () => {
                   </>
                 )}
 
-                {/* Поля для Спецификации материалов */}
                 {activeTab === "spec" && (
                   <>
+                    <div className={styles.formGroup}>
+                      <label>Наименование объекта</label>
+                      <select
+                        required
+                        value={psPprId}
+                        onChange={(e) =>
+                          setPsPprId(Number(e.target.value) || "")
+                        }
+                      >
+                        <option value="">-- Выберите объект --</option>
+                        {pprData.map((ppr) => (
+                          <option key={ppr.ppr_id} value={ppr.ppr_id}>
+                            {ppr.object_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className={styles.formGroup}>
                       <label>Наименование ресурса</label>
                       <input
@@ -917,6 +988,8 @@ export const Inputs: React.FC = () => {
                       <label>Объем по проекту</label>
                       <input
                         type="number"
+                        step="0.01"
+                        min="0"
                         required
                         value={psVol}
                         onChange={(e) => setPsVol(e.target.value)}
@@ -926,7 +999,6 @@ export const Inputs: React.FC = () => {
                   </>
                 )}
 
-                {/* Поля для Подрядчиков */}
                 {activeTab === "contractors" && (
                   <>
                     <div className={styles.formGroup}>
@@ -962,6 +1034,7 @@ export const Inputs: React.FC = () => {
                       <label>Численность бригады</label>
                       <input
                         type="number"
+                        min="1"
                         required
                         value={cSize}
                         onChange={(e) => setCSize(e.target.value)}
@@ -982,6 +1055,7 @@ export const Inputs: React.FC = () => {
                       <label>Срок выполнения (дней)</label>
                       <input
                         type="number"
+                        min="1"
                         required
                         value={cDays}
                         onChange={(e) => setCDays(e.target.value)}
@@ -992,6 +1066,8 @@ export const Inputs: React.FC = () => {
                       <label>Стоимость Работ (руб)</label>
                       <input
                         type="number"
+                        step="0.01"
+                        min="0"
                         required
                         value={cCost}
                         onChange={(e) => setCCost(e.target.value)}
@@ -1001,7 +1077,6 @@ export const Inputs: React.FC = () => {
                   </>
                 )}
 
-                {/* Кнопки управления */}
                 <div className={styles.modalFooter}>
                   <button
                     type="button"
