@@ -26,6 +26,7 @@ export const Outputs: React.FC = () => {
   const [activeTask, setActiveTask] = useState<TaskID | null>(null);
   const [selectedPprId, setSelectedPprId] = useState<number | "">("");
   const [toast, setToast] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const dispatch = useAppDispatch();
   const { pprData } = useAppSelector((state) => state.inputs);
@@ -73,12 +74,23 @@ export const Outputs: React.FC = () => {
       showToast("Сначала выберите объект строительства");
       return;
     }
-    const res = await dispatch(calculateOutputs(Number(selectedPprId)));
-    if (res.meta.requestStatus === "fulfilled" && activeTask) {
-      dispatch(
-        fetchReportData({ taskId: activeTask, pprId: Number(selectedPprId) }),
+    setErrorMsg(null);
+    try {
+      await dispatch(calculateOutputs(Number(selectedPprId))).unwrap();
+      if (activeTask) {
+        const report = await dispatch(
+          fetchReportData({ taskId: activeTask, pprId: Number(selectedPprId) }),
+        ).unwrap();
+
+        if (report && report.length > 0) {
+          showToast("Расчеты успешно обновлены");
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(
+        err.error || err.message || "Произошла ошибка при выполнении расчетов.",
       );
-      showToast("Расчеты успешно обновлены");
     }
   };
 
@@ -93,12 +105,13 @@ export const Outputs: React.FC = () => {
   };
 
   const exportToExcel = (id: TaskID) => {
-    if (reportData.length === 0) return;
+    const dataArray = reportData || [];
+    if (dataArray.length === 0) return;
     const taskName = tasks.find((t) => t.id === id)?.name || "Otchet";
     let exportData: any[] = [];
 
     if (id === 1) {
-      exportData = reportData.map((item, i) => ({
+      exportData = dataArray.map((item, i) => ({
         "№ п/п": i + 1,
         "Наименование работ": item.work_name,
         "Всего чел/час": Number(item.total_manhours).toFixed(2),
@@ -108,7 +121,7 @@ export const Outputs: React.FC = () => {
         "Дата окончания": new Date(item.end_date).toLocaleDateString(),
       }));
     } else if (id === 2) {
-      exportData = reportData.map((item, i) => ({
+      exportData = dataArray.map((item, i) => ({
         "№ п/п": i + 1,
         "Наименование материала": item.mat_name,
         "Ед. изм.": item.unit,
@@ -117,7 +130,7 @@ export const Outputs: React.FC = () => {
         "Этап ГПР": item.stage_link,
       }));
     } else if (id === 3) {
-      exportData = reportData.map((item, i) => ({
+      exportData = dataArray.map((item, i) => ({
         "№ п/п": i + 1,
         "Вид работ": item.work_name,
         Специальность: item.specialty,
@@ -126,7 +139,7 @@ export const Outputs: React.FC = () => {
         "Численность (чел)": item.staff_count,
       }));
     } else if (id === 4) {
-      exportData = reportData.map((item, i) => ({
+      exportData = dataArray.map((item, i) => ({
         "№ п/п": i + 1,
         Работа: item.work_name,
         Объем: item.work_vol_unit,
@@ -165,6 +178,7 @@ export const Outputs: React.FC = () => {
             onClick={() => {
               setActiveTask(t.id);
               dispatch(resetOutputState());
+              setErrorMsg(null);
             }}
           >
             <div className={styles.iconBox}>{t.icon}</div>
@@ -183,6 +197,7 @@ export const Outputs: React.FC = () => {
                   onClick={() => {
                     setActiveTask(null);
                     setSelectedPprId("");
+                    setErrorMsg(null);
                   }}
                   className={styles.closeBtn}
                 >
@@ -197,9 +212,10 @@ export const Outputs: React.FC = () => {
                 <select
                   required
                   value={selectedPprId}
-                  onChange={(e) =>
-                    setSelectedPprId(Number(e.target.value) || "")
-                  }
+                  onChange={(e) => {
+                    setSelectedPprId(Number(e.target.value) || "");
+                    setErrorMsg(null);
+                  }}
                   style={{
                     padding: "0.5rem 1rem",
                     borderRadius: "0.375rem",
@@ -257,12 +273,36 @@ export const Outputs: React.FC = () => {
             </div>
 
             <div className={styles.reportBody}>
-              {loading ? (
+              {errorMsg ? (
+                <div
+                  style={{
+                    color: "#f59e0b",
+                    backgroundColor: "rgba(245, 158, 11, 0.05)",
+                    border: "1px solid rgba(245, 158, 11, 0.15)",
+                    padding: "2.5rem 2rem",
+                    borderRadius: "0.5rem",
+                    margin: "40px auto",
+                    maxWidth: "600px",
+                    textAlign: "center",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  <span style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>
+                    ⚠️
+                  </span>
+                  <strong style={{ fontSize: "1.1rem" }}>
+                    Предупреждение при расчете
+                  </strong>
+                  <div style={{ marginTop: "0.75rem", fontSize: "0.95rem" }}>
+                    {errorMsg}
+                  </div>
+                </div>
+              ) : loading ? (
                 <div className={styles.loaderArea}>
                   <div className={styles.spinner}></div>
                   <h3>Ожидайте, выполняются вычисления...</h3>
                 </div>
-              ) : reportData.length > 0 ? (
+              ) : reportData && reportData.length > 0 ? (
                 <div className={styles.paper} id="printable-doc">
                   <div className={styles.docTop}>
                     <div style={{ fontWeight: "bold" }}>АО «МСУ-1»</div>
@@ -317,7 +357,7 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {reportData.map((item, i) => (
+                          {(reportData || []).map((item, i) => (
                             <tr key={i}>
                               <td>{i + 1}</td>
                               <td>{item.work_name}</td>
@@ -357,7 +397,7 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {reportData.map((item, i) => (
+                          {(reportData || []).map((item, i) => (
                             <tr key={i}>
                               <td>{i + 1}</td>
                               <td>{item.mat_name}</td>
@@ -396,7 +436,7 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {reportData.map((item, i) => (
+                          {(reportData || []).map((item, i) => (
                             <tr key={i}>
                               <td>{i + 1}</td>
                               <td>{item.work_name}</td>
@@ -437,7 +477,7 @@ export const Outputs: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {reportData.map((item, i) => (
+                          {(reportData || []).map((item, i) => (
                             <tr key={i}>
                               <td>{i + 1}</td>
                               <td>{item.work_name}</td>
@@ -485,11 +525,35 @@ export const Outputs: React.FC = () => {
                     textAlign: "center",
                     color: "#94a3b8",
                     padding: "100px",
+                    lineHeight: "1.6",
                   }}
                 >
-                  {!selectedPprId
-                    ? "Выберите объект строительства для просмотра результатов"
-                    : "Нажмите кнопку «Рассчитать» для запуска алгоритмов планирования"}
+                  {!selectedPprId ? (
+                    "Выберите объект строительства для просмотра результатов"
+                  ) : success && activeTask === 4 ? (
+                    <div style={{ color: "#f59e0b" }}>
+                      <strong>Внимание:</strong> Расчет произведен успешно, но
+                      подходящие подрядчики не найдены.
+                      <br />
+                      Проверьте, соответствуют ли сроки выполнения (дней) и
+                      численность бригад в «Список бригад подрядчиков объекта»
+                      вашим плановым потребностям (Задача 3).
+                    </div>
+                  ) : success && activeTask === 3 ? (
+                    <div style={{ color: "#f59e0b" }}>
+                      <strong>Внимание:</strong> Расчет произведен, но нормы
+                      затрат труда в «Справочнике трудовых норм» не найдены для
+                      выбранных работ.
+                    </div>
+                  ) : success && activeTask === 2 ? (
+                    <div style={{ color: "#f59e0b" }}>
+                      <strong>Внимание:</strong> Расчет произведен, но нормы
+                      расхода материалов в «Справочнике норм расхода МТР» не
+                      найдены для выбранных ресурсов.
+                    </div>
+                  ) : (
+                    "Нажмите кнопку «Рассчитать» для запуска алгоритмов планирования"
+                  )}
                 </div>
               )}
             </div>

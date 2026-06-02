@@ -469,7 +469,7 @@ export const Inputs: React.FC = () => {
             <DataTable
               title="Ведомость параметров ППР"
               headers={[
-                "ID",
+                "№ п/п",
                 "Наименование объекта",
                 "Ответственное лицо",
                 "Дата начала СМР",
@@ -477,7 +477,7 @@ export const Inputs: React.FC = () => {
               ]}
               data={pprData || []}
               columns={[
-                "ppr_id",
+                (item: any) => pprData.indexOf(item) + 1,
                 "object_name",
                 "responsible_person",
                 (item: any) =>
@@ -496,7 +496,7 @@ export const Inputs: React.FC = () => {
             <DataTable
               title="Договорная ведомость видов работ"
               headers={[
-                "ID",
+                "№ п/п",
                 "Вид работ",
                 "Сложность",
                 "Требуемые специалисты",
@@ -505,7 +505,7 @@ export const Inputs: React.FC = () => {
               ]}
               data={workTypes || []}
               columns={[
-                "work_type_id",
+                (item: any) => workTypes.indexOf(item) + 1,
                 "work_name",
                 (item: any) =>
                   item.complexity
@@ -526,7 +526,7 @@ export const Inputs: React.FC = () => {
             <DataTable
               title="Требования заказчика по срокам"
               headers={[
-                "ID",
+                "№ п/п",
                 "Наименование объекта",
                 "Этап проекта",
                 "Дата начала",
@@ -536,7 +536,7 @@ export const Inputs: React.FC = () => {
               ]}
               data={clientDeadlines || []}
               columns={[
-                "deadline_id",
+                (item: any) => clientDeadlines.indexOf(item) + 1,
                 (item: any) => item.object_name || "—",
                 "stage_name",
                 (item: any) =>
@@ -560,7 +560,7 @@ export const Inputs: React.FC = () => {
             <DataTable
               title="Ведомость объемов работ (ВОР)"
               headers={[
-                "ID",
+                "№ п/п",
                 "Наименование объекта",
                 "Наименование вида работ",
                 "Объем",
@@ -570,7 +570,7 @@ export const Inputs: React.FC = () => {
               ]}
               data={workVolumes || []}
               columns={[
-                "vol_id",
+                (item: any) => workVolumes.indexOf(item) + 1,
                 (item: any) => item.object_name || "—",
                 (item: any) => item.work_name || "—",
                 "volume",
@@ -589,7 +589,7 @@ export const Inputs: React.FC = () => {
             <DataTable
               title="Проектная спецификация материалов"
               headers={[
-                "ID",
+                "№ п/п",
                 "Наименование объекта",
                 "Наименование ресурса",
                 "Характеристика",
@@ -598,7 +598,7 @@ export const Inputs: React.FC = () => {
               ]}
               data={projectSpecs || []}
               columns={[
-                "spec_id",
+                (item: any) => projectSpecs.indexOf(item) + 1,
                 (item: any) => item.object_name || "—",
                 "material_name",
                 (item: any) => item.characteristics || "—",
@@ -615,7 +615,7 @@ export const Inputs: React.FC = () => {
             <DataTable
               title="Список предложений подрядных организаций"
               headers={[
-                "ID",
+                "№ п/п",
                 "№ Договора",
                 "Название Подрядчика",
                 "Контактное Лицо",
@@ -626,7 +626,7 @@ export const Inputs: React.FC = () => {
               ]}
               data={contractors || []}
               columns={[
-                "cont_id",
+                (item: any) => contractors.indexOf(item) + 1,
                 "contract_id",
                 "org_name",
                 (item: any) => item.contact_person || "—",
@@ -1097,3 +1097,5 @@ export const Inputs: React.FC = () => {
     </div>
   );
 };
+
+export default Inputs;

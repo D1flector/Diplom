@@ -159,14 +159,14 @@ export const Directories: React.FC = () => {
   const mtrConfig = {
     title: "Справочник норм расхода материально-технических ресурсов (МТР)",
     headers: [
-      "ID",
+      "№ п/п",
       "Вид работ",
       "Материал / Категория ресурса",
       "Коэфф. К",
       "Обоснование",
     ],
     columns: [
-      "norm_id",
+      (item: any) => mtrNorms.indexOf(item) + 1,
       (item: any) => item.work_name || "—",
       "res_category",
       (item: any) => {
@@ -180,9 +180,9 @@ export const Directories: React.FC = () => {
 
   const laborConfig = {
     title: "Справочник норм затрат труда рабочих по специальностям",
-    headers: ["ID", "Вид работ", "Специальность", "Разряд", "Норма (чел-ч)"],
+    headers: ["№ п/п", "Вид работ", "Специальность", "Разряд", "Норма (чел-ч)"],
     columns: [
-      "norm_id",
+      (item: any) => laborNorms.indexOf(item) + 1,
       (item: any) => item.work_name || "—",
       "specialty",
       "rank",

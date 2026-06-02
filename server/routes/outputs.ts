@@ -52,17 +52,14 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-
-    await client.query("DELETE FROM calendar_plan WHERE ppr_id = $1", [pprId]);
-    await client.query("DELETE FROM mtr_plan WHERE ppr_id = $1", [pprId]);
-    await client.query("DELETE FROM labor_plan WHERE ppr_id = $1", [pprId]);
+    console.log(`[РАСЧЕТ] Начало вычислений для проекта ID: ${pprId}`);
 
     const pprResult = await client.query(
       "SELECT * FROM ppr_data WHERE ppr_id = $1",
       [pprId],
     );
     if (pprResult.rows.length === 0) {
-      throw new Error("Объект ППР не найден");
+      throw new Error("Объект ППР не найден в базе данных");
     }
     const ppr = pprResult.rows[0];
     const startDateSmr = ppr.start_date_smr;
@@ -78,6 +75,24 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
       [pprId],
     );
     const volumes = volumesResult.rows;
+
+    if (volumes.length === 0) {
+      throw new Error(
+        "В ведомости объемов работ (ВОР) нет записей для этого объекта. Расчет невозможен.",
+      );
+    }
+
+    console.log(
+      `[ЗАДАЧА 1] Найдено объемов работ для расчета: ${volumes.length}`,
+    );
+
+    await client.query("DELETE FROM calendar_plan WHERE ppr_id = $1", [pprId]);
+    await client.query("DELETE FROM mtr_plan WHERE ppr_id = $1", [pprId]);
+    await client.query("DELETE FROM labor_plan WHERE ppr_id = $1", [pprId]);
+    await client.query(
+      "DELETE FROM staff_allocation_result WHERE work_type_id IN (SELECT work_type_id FROM work_volumes WHERE ppr_id = $1)",
+      [pprId],
+    );
 
     let currentDate = new Date(startDateSmr);
 
@@ -110,72 +125,89 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
 
       currentDate.setDate(currentDate.getDate() + 1);
     }
+    console.log(`[ЗАДАЧА 1] Календарный план успешно рассчитан`);
 
     const specResult = await client.query(
       "SELECT * FROM project_spec WHERE ppr_id = $1",
       [pprId],
     );
     const specs = specResult.rows;
+    console.log(`[ЗАДАЧА 2] Найдено позиций спецификации: ${specs.length}`);
 
     for (const spec of specs) {
       const normResult = await client.query(
         `
-        SELECT * FROM consumption_norms 
-        WHERE res_category ILIKE $1 OR res_category ILIKE $2
+        SELECT cn.* FROM consumption_norms cn
+        LEFT JOIN work_types wt ON cn.work_type_id = wt.work_type_id
+        WHERE LOWER(cn.res_category) LIKE LOWER($1) 
+           OR LOWER(cn.res_category) LIKE LOWER($2)
+           OR LOWER(wt.work_name) LIKE LOWER($1)
         LIMIT 1
       `,
-        [`%${spec.material_name}%`, `%${spec.material_name.substring(0, 5)}%`],
+        [`%${spec.material_name}%`, `%${spec.material_name.substring(0, 4)}%`],
       );
 
-      const coeff =
-        normResult.rows.length > 0
-          ? parseFloat(normResult.rows[0].coeff_k)
-          : 1.0;
-      const stageLink =
-        normResult.rows.length > 0 ? normResult.rows[0].rationale : "СМР";
-      const reqVolume = spec.proj_vol * coeff;
+      if (normResult.rows.length > 0) {
+        const coeff = parseFloat(normResult.rows[0].coeff_k);
+        const stageLink = normResult.rows[0].rationale || "СМР";
+        const reqVolume = spec.proj_vol * coeff;
 
-      const calResult = await client.query(
-        `
-        SELECT * FROM calendar_plan 
-        WHERE ppr_id = $1 
-        ORDER BY plan_id ASC LIMIT 1
-      `,
-        [pprId],
-      );
+        const calResult = await client.query(
+          `
+          SELECT * FROM calendar_plan 
+          WHERE ppr_id = $1 
+          ORDER BY plan_id ASC LIMIT 1
+        `,
+          [pprId],
+        );
 
-      const deliveryDate =
-        calResult.rows.length > 0 ? calResult.rows[0].start_date : startDateSmr;
+        const deliveryDate =
+          calResult.rows.length > 0
+            ? calResult.rows[0].start_date
+            : startDateSmr;
 
-      await client.query(
-        `
-        INSERT INTO mtr_plan (ppr_id, spec_id, unit, req_volume, delivery_date, stage_link)
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `,
-        [pprId, spec.spec_id, spec.unit, reqVolume, deliveryDate, stageLink],
-      );
+        await client.query(
+          `
+          INSERT INTO mtr_plan (ppr_id, spec_id, unit, req_volume, delivery_date, stage_link)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `,
+          [pprId, spec.spec_id, spec.unit, reqVolume, deliveryDate, stageLink],
+        );
+      }
     }
+    console.log(`[ЗАДАЧА 2] Ведомость МТР успешно рассчитана`);
 
     const calendarResult = await client.query(
       `
-      SELECT cp.*, wv.volume, wv.vol_id
+      SELECT cp.*, wv.volume, wv.vol_id, wt.work_name
       FROM calendar_plan cp
       JOIN work_volumes wv ON cp.ppr_id = wv.ppr_id AND cp.work_type_id = wv.work_type_id
+      JOIN work_types wt ON cp.work_type_id = wt.work_type_id
       WHERE cp.ppr_id = $1
     `,
       [pprId],
     );
 
     const calPlans = calendarResult.rows;
+    console.log(
+      `[ЗАДАЧА 3] Найдено строк календарного плана: ${calPlans.length}`,
+    );
 
     for (const cp of calPlans) {
       const laborNormResult = await client.query(
         `
-        SELECT * FROM labor_norms 
-        WHERE work_type_id = $1 
+        SELECT ln.* FROM labor_norms ln
+        LEFT JOIN work_types wt ON ln.work_type_id = wt.work_type_id
+        WHERE ln.work_type_id = $1 
+           OR LOWER(wt.work_name) LIKE LOWER($2)
+           OR LOWER(wt.work_name) LIKE LOWER($3)
         LIMIT 1
       `,
-        [cp.work_type_id],
+        [
+          cp.work_type_id,
+          `%${cp.work_name}%`,
+          `%${cp.work_name.substring(0, 5)}%`,
+        ],
       );
 
       if (laborNormResult.rows.length > 0) {
@@ -197,27 +229,45 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
             staffCount,
           ],
         );
+        console.log(
+          `  -> [УСПЕХ] Найдена норма для работы "${cp.work_name}" (${norm.specialty})`,
+        );
+      } else {
+        console.log(
+          `  -> [ПРЕДУПРЕЖДЕНИЕ] Не найдена норма в labor_norms для работы "${cp.work_name}"!`,
+        );
       }
     }
-
-    await client.query(
-      "DELETE FROM staff_allocation_result WHERE work_type_id IN (SELECT work_type_id FROM work_volumes WHERE ppr_id = $1)",
-      [pprId],
-    );
+    console.log(`[ЗАДАЧА 3] Потребность в кадрах успешно рассчитана`);
 
     const laborPlanResult = await client.query(
       "SELECT * FROM labor_plan WHERE ppr_id = $1",
       [pprId],
     );
     const laborPlans = laborPlanResult.rows;
+    console.log(
+      `[ЗАДАЧА 4] Строк планов кадров для подбора подрядчиков: ${laborPlans.length}`,
+    );
 
     for (const lp of laborPlans) {
+      let searchPattern1 = `%${lp.specialty}%`;
+      let searchPattern2 = `%${lp.specialty.substring(0, 4)}%`;
+      let fallbackPattern = "%";
+
+      if (lp.specialty.includes("Арматур")) {
+        fallbackPattern = "%Армир%";
+      } else if (lp.specialty.includes("Бетон")) {
+        fallbackPattern = "%Бетон%";
+      }
+
       const contractorsResult = await client.query(
         `
         SELECT * FROM contractor_list 
-        WHERE work_desc ILIKE $1 OR work_desc ILIKE $2
+        WHERE LOWER(work_desc) LIKE LOWER($1) 
+           OR LOWER(work_desc) LIKE LOWER($2)
+           OR LOWER(work_desc) LIKE LOWER($3)
       `,
-        [`%${lp.specialty}%`, `%${lp.specialty.substring(0, 5)}%`],
+        [searchPattern1, searchPattern2, fallbackPattern],
       );
 
       const candidates = contractorsResult.rows;
@@ -273,13 +323,23 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
             bestContractor.offer_cost,
           ],
         );
+        console.log(
+          `  -> [УСПЕХ] Назначен подрядчик "${bestContractor.org_name}" на работу ID: ${lp.work_type_id}`,
+        );
+      } else {
+        console.log(
+          `  -> [ПРЕДУПРЕЖДЕНИЕ] Подходящий подрядчик для специальности "${lp.specialty}" не найден по лимитам времени/людей!`,
+        );
       }
     }
+    console.log(`[ЗАДАЧА 4] Распределение подрядчиков успешно рассчитано`);
 
     await client.query("COMMIT");
+    console.log(`[УСПЕХ] Все 4 задачи успешно рассчитаны и сохранены в БД!`);
     res.json({ success: true });
   } catch (err: any) {
     await client.query("ROLLBACK");
+    console.error(`[ОШИБКА] Расчет прерван и откачен:`, err.message);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();

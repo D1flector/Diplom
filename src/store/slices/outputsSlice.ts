@@ -4,19 +4,38 @@ const API_URL = "http://localhost:5000/api/outputs";
 
 export const calculateOutputs = createAsyncThunk(
   "outputs/calculate",
-  async (pprId: number) => {
-    const response = await fetch(`${API_URL}/calculate/${pprId}`, {
-      method: "POST",
-    });
-    return await response.json();
+  async (pprId: number, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_URL}/calculate/${pprId}`, {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data);
+      }
+      return data;
+    } catch (err: any) {
+      return rejectWithValue({ error: err.message || "Сетевая ошибка" });
+    }
   },
 );
 
 export const fetchReportData = createAsyncThunk(
   "outputs/fetchReport",
-  async ({ taskId, pprId }: { taskId: number; pprId: number }) => {
-    const response = await fetch(`${API_URL}/report/${taskId}/${pprId}`);
-    return await response.json();
+  async (
+    { taskId, pprId }: { taskId: number; pprId: number },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(`${API_URL}/report/${taskId}/${pprId}`);
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data);
+      }
+      return data;
+    } catch (err: any) {
+      return rejectWithValue({ error: err.message || "Сетевая ошибка" });
+    }
   },
 );
 
