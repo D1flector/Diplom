@@ -10,6 +10,7 @@ import {
   updateLaborNorm,
   deleteLaborNorm,
 } from "../../store/slices/directorySlice";
+import { fetchWorkTypes } from "../../store/slices/inputsSlice";
 import { DataTable } from "../../components/DataTable/DataTable";
 import { Plus, Edit3, Trash2 } from "lucide-react";
 import styles from "./Directories.module.scss";
@@ -21,23 +22,21 @@ export const Directories: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const dispatch = useAppDispatch();
 
-  // Получаем списки из Redux
   const { mtrNorms, laborNorms, loading } = useAppSelector(
     (state) => state.directory,
   );
+  const { workTypes } = useAppSelector((state) => state.inputs);
 
-  // Стейты управления модальным окном
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Поля ввода для МТР
-  const [mtrWorkName, setMtrWorkName] = useState("");
+  const [mtrWorkTypeId, setMtrWorkTypeId] = useState<number | "">("");
   const [mtrResCategory, setMtrResCategory] = useState("");
   const [mtrCoeffK, setMtrCoeffK] = useState("");
   const [mtrRationale, setMtrRationale] = useState("");
 
-  // Поля ввода для норм труда
-  const [labWorkName, setLabWorkName] = useState("");
+  const [labWorkTypeId, setLabWorkTypeId] = useState<number | "">("");
   const [labSpecialty, setLabSpecialty] = useState("");
   const [labRank, setLabRank] = useState("1");
   const [labManhourNorm, setLabManhourNorm] = useState("");
@@ -45,6 +44,7 @@ export const Directories: React.FC = () => {
   useEffect(() => {
     dispatch(fetchMtrNorms());
     dispatch(fetchLaborNorms());
+    dispatch(fetchWorkTypes());
   }, [dispatch]);
 
   const handleTabChange = (tab: TabType) => {
@@ -69,15 +69,14 @@ export const Directories: React.FC = () => {
   const handleOpenAdd = () => {
     setIsEditMode(false);
     setIsModalOpen(true);
+    setErrorMsg(null);
 
-    // Сброс МТР
-    setMtrWorkName("");
+    setMtrWorkTypeId("");
     setMtrResCategory("");
     setMtrCoeffK("");
     setMtrRationale("");
 
-    // Сброс норм труда
-    setLabWorkName("");
+    setLabWorkTypeId("");
     setLabSpecialty("");
     setLabRank("1");
     setLabManhourNorm("");
@@ -87,11 +86,12 @@ export const Directories: React.FC = () => {
     if (selectedId === null) return;
     setIsEditMode(true);
     setIsModalOpen(true);
+    setErrorMsg(null);
 
     if (activeTab === "mtr") {
       const item = mtrNorms.find((n) => n.norm_id === selectedId);
       if (item) {
-        setMtrWorkName(item.work_name);
+        setMtrWorkTypeId(item.work_type_id);
         setMtrResCategory(item.res_category);
         setMtrCoeffK(item.coeff_k.toString());
         setMtrRationale(item.rationale || "");
@@ -99,7 +99,7 @@ export const Directories: React.FC = () => {
     } else {
       const item = laborNorms.find((n) => n.norm_id === selectedId);
       if (item) {
-        setLabWorkName(item.work_name);
+        setLabWorkTypeId(item.work_type_id);
         setLabSpecialty(item.specialty);
         setLabRank(item.rank.toString());
         setLabManhourNorm(item.manhour_norm.toString());
@@ -107,39 +107,53 @@ export const Directories: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
 
-    if (activeTab === "mtr") {
-      const payload = {
-        work_name: mtrWorkName,
-        res_category: mtrResCategory,
-        coeff_k: parseFloat(mtrCoeffK) || 0,
-        rationale: mtrRationale || "",
-      };
+    try {
+      if (activeTab === "mtr") {
+        if (!mtrWorkTypeId) throw new Error("Необходимо выбрать вид работ");
+        const payload = {
+          work_type_id: Number(mtrWorkTypeId),
+          res_category: mtrResCategory,
+          coeff_k: parseFloat(mtrCoeffK) || 0,
+          rationale: mtrRationale || "",
+        };
 
-      if (isEditMode && selectedId !== null) {
-        dispatch(updateMtrNorm({ id: selectedId, data: payload }));
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateMtrNorm({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addMtrNorm(payload)).unwrap();
+        }
       } else {
-        dispatch(addMtrNorm(payload));
-      }
-    } else {
-      const payload = {
-        work_name: labWorkName,
-        specialty: labSpecialty,
-        rank: parseInt(labRank) || 1,
-        manhour_norm: parseFloat(labManhourNorm) || 0,
-      };
+        if (!labWorkTypeId) throw new Error("Необходимо выбрать вид работ");
+        const payload = {
+          work_type_id: Number(labWorkTypeId),
+          specialty: labSpecialty,
+          rank: parseInt(labRank) || 1,
+          manhour_norm: parseFloat(labManhourNorm) || 0,
+        };
 
-      if (isEditMode && selectedId !== null) {
-        dispatch(updateLaborNorm({ id: selectedId, data: payload }));
-      } else {
-        dispatch(addLaborNorm(payload));
+        if (isEditMode && selectedId !== null) {
+          await dispatch(
+            updateLaborNorm({ id: selectedId, data: payload }),
+          ).unwrap();
+        } else {
+          await dispatch(addLaborNorm(payload)).unwrap();
+        }
       }
+
+      setIsModalOpen(false);
+      setSelectedId(null);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(
+        err.message || "Произошла ошибка базы данных при сохранении.",
+      );
     }
-
-    setIsModalOpen(false);
-    setSelectedId(null);
   };
 
   const mtrConfig = {
@@ -153,12 +167,11 @@ export const Directories: React.FC = () => {
     ],
     columns: [
       "norm_id",
-      "work_name",
+      (item: any) => item.work_name || "—",
       "res_category",
-      // Исправлено здесь: преобразуем к числу перед вызовом toFixed
       (item: any) => {
         const val = Number(item.coeff_k);
-        return isNaN(val) ? "0.0000" : val.toFixed(4);
+        return isNaN(val) ? "0.00" : val.toFixed(2);
       },
       (item: any) => item.rationale || "—",
     ],
@@ -168,7 +181,13 @@ export const Directories: React.FC = () => {
   const laborConfig = {
     title: "Справочник норм затрат труда рабочих по специальностям",
     headers: ["ID", "Вид работ", "Специальность", "Разряд", "Норма (чел-ч)"],
-    columns: ["norm_id", "work_name", "specialty", "rank", "manhour_norm"],
+    columns: [
+      "norm_id",
+      (item: any) => item.work_name || "—",
+      "specialty",
+      "rank",
+      "manhour_norm",
+    ],
     idField: "norm_id",
   };
 
@@ -177,7 +196,6 @@ export const Directories: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      {/* Шапка вкладок */}
       <div className={styles.tabsHeader}>
         <button
           onClick={() => handleTabChange("mtr")}
@@ -197,7 +215,6 @@ export const Directories: React.FC = () => {
         </button>
       </div>
 
-      {/* Панель инструментов */}
       <div className={styles.toolbar}>
         <button onClick={handleOpenAdd} className={styles.addBtn}>
           <Plus size={14} /> Добавить строку
@@ -229,7 +246,6 @@ export const Directories: React.FC = () => {
         )}
       </div>
 
-      {/* Таблица */}
       <div className={styles.content}>
         {loading ? (
           <div className={styles.loader}>Загрузка нормативных данных...</div>
@@ -246,7 +262,6 @@ export const Directories: React.FC = () => {
         )}
       </div>
 
-      {/* Модальное окно */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalCard}>
@@ -259,18 +274,39 @@ export const Directories: React.FC = () => {
             </div>
             <form onSubmit={handleSave}>
               <div className={styles.modalBody}>
-                {/* Форма для норм расхода МТР */}
+                {errorMsg && (
+                  <div
+                    style={{
+                      color: "#ef4444",
+                      backgroundColor: "#fef2f2",
+                      padding: "0.75rem",
+                      borderRadius: "0.375rem",
+                      marginBottom: "1rem",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    <strong>Ошибка:</strong> {errorMsg}
+                  </div>
+                )}
+
                 {activeTab === "mtr" && (
                   <>
                     <div className={styles.formGroup}>
                       <label>Наименование вида работ</label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        value={mtrWorkName}
-                        onChange={(e) => setMtrWorkName(e.target.value)}
-                        placeholder="Например, Разработка грунта"
-                      />
+                        value={mtrWorkTypeId}
+                        onChange={(e) =>
+                          setMtrWorkTypeId(Number(e.target.value) || "")
+                        }
+                      >
+                        <option value="">-- Выберите вид работ --</option>
+                        {workTypes.map((wt) => (
+                          <option key={wt.work_type_id} value={wt.work_type_id}>
+                            {wt.work_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className={styles.formGroup}>
                       <label>Категория ресурса / Материал</label>
@@ -286,7 +322,8 @@ export const Directories: React.FC = () => {
                       <label>Коэффициент расхода (К)</label>
                       <input
                         type="number"
-                        step="0.0001"
+                        step="0.01"
+                        min="0"
                         required
                         value={mtrCoeffK}
                         onChange={(e) => setMtrCoeffK(e.target.value)}
@@ -305,18 +342,24 @@ export const Directories: React.FC = () => {
                   </>
                 )}
 
-                {/* Форма для норм труда */}
                 {activeTab === "labor" && (
                   <>
                     <div className={styles.formGroup}>
                       <label>Наименование вида работ</label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        value={labWorkName}
-                        onChange={(e) => setLabWorkName(e.target.value)}
-                        placeholder="Например, Кирпичная кладка"
-                      />
+                        value={labWorkTypeId}
+                        onChange={(e) =>
+                          setLabWorkTypeId(Number(e.target.value) || "")
+                        }
+                      >
+                        <option value="">-- Выберите вид работ --</option>
+                        {workTypes.map((wt) => (
+                          <option key={wt.work_type_id} value={wt.work_type_id}>
+                            {wt.work_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className={styles.formGroup}>
                       <label>Специальность</label>
@@ -347,6 +390,7 @@ export const Directories: React.FC = () => {
                       <input
                         type="number"
                         step="0.01"
+                        min="0"
                         required
                         value={labManhourNorm}
                         onChange={(e) => setLabManhourNorm(e.target.value)}
@@ -356,7 +400,6 @@ export const Directories: React.FC = () => {
                   </>
                 )}
 
-                {/* Подвал с кнопками */}
                 <div className={styles.modalFooter}>
                   <button
                     type="button"
