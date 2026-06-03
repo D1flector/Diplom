@@ -6,6 +6,7 @@ import directoryRouter from "./routes/directories.ts";
 import inputsRouter from "./routes/inputs.ts";
 import outputsRouter from "./routes/outputs.ts";
 import authRouter from "./routes/auth.ts";
+import auditRouter from "./routes/audit.ts";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api", inputsRouter);
 app.use("/api/outputs", outputsRouter);
 app.use("/api", directoryRouter);
 app.use("/api/auth", authRouter);
+app.use("/api", auditRouter);
 
 app.get("/api/test-db", async (req: Request, res: Response) => {
   try {

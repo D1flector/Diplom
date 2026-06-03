@@ -1,11 +1,8 @@
 import { Router, Request, Response } from "express";
 import pool from "../db.ts";
+import { writeAuditLog } from "./audit.ts";
 
 const router = Router();
-
-// =========================================================================
-// 1. ПАРАМЕТРЫ ППР (ppr_data)
-// =========================================================================
 
 router.get("/ppr-data", async (req: Request, res: Response) => {
   try {
@@ -19,28 +16,24 @@ router.get("/ppr-data", async (req: Request, res: Response) => {
 });
 
 router.post("/ppr-data", async (req: Request, res: Response) => {
-  const {
-    object_name,
-    responsible_person,
-    start_date_smr,
-    technology_type,
-    ppr_section,
-    parameter,
-    value,
-  } = req.body;
+  const { object_name, responsible_person, start_date_smr, technology_type } =
+    req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO ppr_data (object_name, responsible_person, start_date_smr, technology_type, ppr_section, parameter, value)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO ppr_data (object_name, responsible_person, start_date_smr, technology_type)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
       [
         object_name,
         responsible_person,
         start_date_smr || null,
         technology_type || null,
-        ppr_section || null,
-        parameter || null,
-        value || null,
       ],
+    );
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "ppr_data",
+      `Создан объект строительства: "${object_name}"`,
     );
     res.status(201).json(result.rows[0]);
   } catch (err: any) {
@@ -50,34 +43,30 @@ router.post("/ppr-data", async (req: Request, res: Response) => {
 
 router.put("/ppr-data/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const {
-    object_name,
-    responsible_person,
-    start_date_smr,
-    technology_type,
-    ppr_section,
-    parameter,
-    value,
-  } = req.body;
+  const { object_name, responsible_person, start_date_smr, technology_type } =
+    req.body;
   try {
     const result = await pool.query(
       `UPDATE ppr_data
-       SET object_name = $1, responsible_person = $2, start_date_smr = $3, technology_type = $4, ppr_section = $5, parameter = $6, value = $7
-       WHERE ppr_id = $8 RETURNING *`,
+       SET object_name = $1, responsible_person = $2, start_date_smr = $3, technology_type = $4
+       WHERE ppr_id = $5 RETURNING *`,
       [
         object_name,
         responsible_person,
         start_date_smr || null,
         technology_type || null,
-        ppr_section || null,
-        parameter || null,
-        value || null,
         id,
       ],
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "ppr_data",
+      `Обновлены параметры объекта строительства: "${object_name}"`,
+    );
     res.json(result.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -87,6 +76,13 @@ router.put("/ppr-data/:id", async (req: Request, res: Response) => {
 router.delete("/ppr-data/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const pprResult = await pool.query(
+      "SELECT object_name FROM ppr_data WHERE ppr_id = $1",
+      [id],
+    );
+    const objName =
+      pprResult.rows.length > 0 ? pprResult.rows[0].object_name : id;
+
     const result = await pool.query(
       "DELETE FROM ppr_data WHERE ppr_id = $1 RETURNING ppr_id",
       [id],
@@ -94,15 +90,17 @@ router.delete("/ppr-data/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(
+      req,
+      "DELETE",
+      "ppr_data",
+      `Удален объект строительства: "${objName}" (ID: ${id})`,
+    );
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// =========================================================================
-// 2. ВИДЫ РАБОТ (work_types)
-// =========================================================================
 
 router.get("/work-types", async (req: Request, res: Response) => {
   try {
@@ -128,6 +126,12 @@ router.post("/work-types", async (req: Request, res: Response) => {
         parseInt(staff_qty) || 0,
         parseInt(duration) || 0,
       ],
+    );
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "work_types",
+      `Добавлен новый вид работ: "${work_name}"`,
     );
     res.status(201).json(result.rows[0]);
   } catch (err: any) {
@@ -155,6 +159,12 @@ router.put("/work-types/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "work_types",
+      `Обновлены параметры вида работ: "${work_name}"`,
+    );
     res.json(result.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -164,6 +174,12 @@ router.put("/work-types/:id", async (req: Request, res: Response) => {
 router.delete("/work-types/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const wtResult = await pool.query(
+      "SELECT work_name FROM work_types WHERE work_type_id = $1",
+      [id],
+    );
+    const name = wtResult.rows.length > 0 ? wtResult.rows[0].work_name : id;
+
     const result = await pool.query(
       "DELETE FROM work_types WHERE work_type_id = $1 RETURNING work_type_id",
       [id],
@@ -171,15 +187,17 @@ router.delete("/work-types/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(
+      req,
+      "DELETE",
+      "work_types",
+      `Удален вид работ: "${name}" (ID: ${id})`,
+    );
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// =========================================================================
-// 3. ДИРЕКТИВНЫЕ СРОКИ (client_deadlines)
-// =========================================================================
 
 router.get("/client-deadlines", async (req: Request, res: Response) => {
   try {
@@ -220,6 +238,13 @@ router.post("/client-deadlines", async (req: Request, res: Response) => {
     `,
       [insertResult.rows[0].deadline_id],
     );
+
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "client_deadlines",
+      `Добавлен директивный срок для этапа "${stage_name}" на объекте "${fullRow.rows[0].object_name}"`,
+    );
     res.status(201).json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -257,6 +282,13 @@ router.put("/client-deadlines/:id", async (req: Request, res: Response) => {
     `,
       [id],
     );
+
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "client_deadlines",
+      `Обновлен директивный срок для этапа "${stage_name}" на объекте "${fullRow.rows[0].object_name}"`,
+    );
     res.json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -266,6 +298,19 @@ router.put("/client-deadlines/:id", async (req: Request, res: Response) => {
 router.delete("/client-deadlines/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const cdResult = await pool.query(
+      `
+      SELECT cd.*, p.object_name FROM client_deadlines cd
+      LEFT JOIN ppr_data p ON cd.ppr_id = p.ppr_id
+      WHERE cd.deadline_id = $1
+    `,
+      [id],
+    );
+    const details =
+      cdResult.rows.length > 0
+        ? `Удален директивный срок этапа "${cdResult.rows[0].stage_name}" объекта "${cdResult.rows[0].object_name}" (ID: ${id})`
+        : `Удален директивный срок с ID: ${id}`;
+
     const result = await pool.query(
       "DELETE FROM client_deadlines WHERE deadline_id = $1 RETURNING deadline_id",
       [id],
@@ -273,15 +318,12 @@ router.delete("/client-deadlines/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(req, "DELETE", "client_deadlines", details);
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// =========================================================================
-// 4. ВЕДОМОСТЬ ОБЪЕМОВ РАБОТ (work_volumes)
-// =========================================================================
 
 router.get("/work-volumes", async (req: Request, res: Response) => {
   try {
@@ -324,6 +366,13 @@ router.post("/work-volumes", async (req: Request, res: Response) => {
     `,
       [insertResult.rows[0].vol_id],
     );
+
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "work_volumes",
+      `Добавлен физический объем ВОР для работы "${fullRow.rows[0].work_name}" на объекте "${fullRow.rows[0].object_name}"`,
+    );
     res.status(201).json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -362,6 +411,13 @@ router.put("/work-volumes/:id", async (req: Request, res: Response) => {
     `,
       [id],
     );
+
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "work_volumes",
+      `Обновлен объем ВОР для работы "${fullRow.rows[0].work_name}" на объекте "${fullRow.rows[0].object_name}"`,
+    );
     res.json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -371,6 +427,20 @@ router.put("/work-volumes/:id", async (req: Request, res: Response) => {
 router.delete("/work-volumes/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const wvResult = await pool.query(
+      `
+      SELECT wv.*, p.object_name, wt.work_name FROM work_volumes wv
+      LEFT JOIN ppr_data p ON wv.ppr_id = p.ppr_id
+      LEFT JOIN work_types wt ON wv.work_type_id = wt.work_type_id
+      WHERE wv.vol_id = $1
+    `,
+      [id],
+    );
+    const details =
+      wvResult.rows.length > 0
+        ? `Удален объем ВОР работы "${wvResult.rows[0].work_name}" объекта "${wvResult.rows[0].object_name}" (ID: ${id})`
+        : `Удален объем ВОР с ID: ${id}`;
+
     const result = await pool.query(
       "DELETE FROM work_volumes WHERE vol_id = $1 RETURNING vol_id",
       [id],
@@ -378,15 +448,12 @@ router.delete("/work-volumes/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(req, "DELETE", "work_volumes", details);
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// =========================================================================
-// 5. СПЕЦИФИКАЦИЯ ПРОЕКТА (project_spec)
-// =========================================================================
 
 router.get("/project-spec", async (req: Request, res: Response) => {
   try {
@@ -425,6 +492,13 @@ router.post("/project-spec", async (req: Request, res: Response) => {
     `,
       [insertResult.rows[0].spec_id],
     );
+
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "project_spec",
+      `Добавлена позиция спецификации "${material_name}" для объекта "${fullRow.rows[0].object_name}"`,
+    );
     res.status(201).json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -460,6 +534,13 @@ router.put("/project-spec/:id", async (req: Request, res: Response) => {
     `,
       [id],
     );
+
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "project_spec",
+      `Обновлена позиция спецификации "${material_name}" для объекта "${fullRow.rows[0].object_name}"`,
+    );
     res.json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -469,6 +550,19 @@ router.put("/project-spec/:id", async (req: Request, res: Response) => {
 router.delete("/project-spec/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const psResult = await pool.query(
+      `
+      SELECT ps.*, p.object_name FROM project_spec ps
+      LEFT JOIN ppr_data p ON ps.ppr_id = p.ppr_id
+      WHERE ps.spec_id = $1
+    `,
+      [id],
+    );
+    const details =
+      psResult.rows.length > 0
+        ? `Удалена позиция спецификации "${psResult.rows[0].material_name}" объекта "${psResult.rows[0].object_name}" (ID: ${id})`
+        : `Удалена позиция спецификации с ID: ${id}`;
+
     const result = await pool.query(
       "DELETE FROM project_spec WHERE spec_id = $1 RETURNING spec_id",
       [id],
@@ -476,15 +570,12 @@ router.delete("/project-spec/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(req, "DELETE", "project_spec", details);
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// =========================================================================
-// 6. ПРЕДЛОЖЕНИЯ ПОДРЯДЧИКОВ (contractor_list)
-// =========================================================================
 
 router.get("/contractors", async (req: Request, res: Response) => {
   try {
@@ -520,6 +611,12 @@ router.post("/contractors", async (req: Request, res: Response) => {
         parseInt(offer_days) || 0,
         parseFloat(offer_cost) || 0,
       ],
+    );
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "contractor_list",
+      `Добавлено тендерное предложение подрядчика "${org_name}" по договору № ${contract_id}`,
     );
     res.status(201).json(result.rows[0]);
   } catch (err: any) {
@@ -557,6 +654,12 @@ router.put("/contractors/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "contractor_list",
+      `Обновлено предложение подрядчика "${org_name}" по договору № ${contract_id}`,
+    );
     res.json(result.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -566,6 +669,15 @@ router.put("/contractors/:id", async (req: Request, res: Response) => {
 router.delete("/contractors/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const contResult = await pool.query(
+      "SELECT org_name, contract_id FROM contractor_list WHERE cont_id = $1",
+      [id],
+    );
+    const details =
+      contResult.rows.length > 0
+        ? `Удалено предложение подрядчика "${contResult.rows[0].org_name}" по договору № ${contResult.rows[0].contract_id} (ID: ${id})`
+        : `Удалено предложение подрядчика с ID: ${id}`;
+
     const result = await pool.query(
       "DELETE FROM contractor_list WHERE cont_id = $1 RETURNING cont_id",
       [id],
@@ -573,6 +685,7 @@ router.delete("/contractors/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(req, "DELETE", "contractor_list", details);
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

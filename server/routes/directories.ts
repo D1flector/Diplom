@@ -1,11 +1,8 @@
 import { Router, Request, Response } from "express";
 import pool from "../db.ts";
+import { writeAuditLog } from "./audit.ts";
 
 const router = Router();
-
-// =========================================================================
-// 1. НОРМЫ РАСХОДА МТР (consumption_norms)
-// =========================================================================
 
 router.get("/mtr-norms", async (req: Request, res: Response) => {
   try {
@@ -45,6 +42,12 @@ router.post("/mtr-norms", async (req: Request, res: Response) => {
       [insertResult.rows[0].norm_id],
     );
 
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "consumption_norms",
+      `Добавлена норма расхода материала "${res_category}" для вида работ "${fullRow.rows[0].work_name}"`,
+    );
     res.status(201).json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -82,6 +85,12 @@ router.put("/mtr-norms/:id", async (req: Request, res: Response) => {
       [id],
     );
 
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "consumption_norms",
+      `Обновлена норма расхода материала "${res_category}" для вида работ "${fullRow.rows[0].work_name}"`,
+    );
     res.json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -91,6 +100,19 @@ router.put("/mtr-norms/:id", async (req: Request, res: Response) => {
 router.delete("/mtr-norms/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const cnResult = await pool.query(
+      `
+      SELECT cn.*, wt.work_name FROM consumption_norms cn
+      LEFT JOIN work_types wt ON cn.work_type_id = wt.work_type_id
+      WHERE cn.norm_id = $1
+    `,
+      [id],
+    );
+    const details =
+      cnResult.rows.length > 0
+        ? `Удалена норма расхода материала "${cnResult.rows[0].res_category}" для вида работ "${cnResult.rows[0].work_name}" (ID: ${id})`
+        : `Удалена норма расхода МТР с ID: ${id}`;
+
     const result = await pool.query(
       "DELETE FROM consumption_norms WHERE norm_id = $1 RETURNING norm_id",
       [id],
@@ -98,15 +120,12 @@ router.delete("/mtr-norms/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(req, "DELETE", "consumption_norms", details);
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// =========================================================================
-// 2. ТРУДОВЫЕ НОРМАТИВЫ (labor_norms)
-// =========================================================================
 
 router.get("/labor-norms", async (req: Request, res: Response) => {
   try {
@@ -146,6 +165,12 @@ router.post("/labor-norms", async (req: Request, res: Response) => {
       [insertResult.rows[0].norm_id],
     );
 
+    await writeAuditLog(
+      req,
+      "INSERT",
+      "labor_norms",
+      `Добавлена трудовая норма для специальности "${specialty}" (${rank} разряд) для вида работ "${fullRow.rows[0].work_name}"`,
+    );
     res.status(201).json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -183,6 +208,12 @@ router.put("/labor-norms/:id", async (req: Request, res: Response) => {
       [id],
     );
 
+    await writeAuditLog(
+      req,
+      "UPDATE",
+      "labor_norms",
+      `Обновлена трудовая норма для специальности "${specialty}" (${rank} разряд) для вида работ "${fullRow.rows[0].work_name}"`,
+    );
     res.json(fullRow.rows[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -192,6 +223,19 @@ router.put("/labor-norms/:id", async (req: Request, res: Response) => {
 router.delete("/labor-norms/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const lnResult = await pool.query(
+      `
+      SELECT ln.*, wt.work_name FROM labor_norms ln
+      LEFT JOIN work_types wt ON ln.work_type_id = wt.work_type_id
+      WHERE ln.norm_id = $1
+    `,
+      [id],
+    );
+    const details =
+      lnResult.rows.length > 0
+        ? `Удалена трудовая норма специальности "${lnResult.rows[0].specialty}" для вида работ "${lnResult.rows[0].work_name}" (ID: ${id})`
+        : `Удалена трудовая норма с ID: ${id}`;
+
     const result = await pool.query(
       "DELETE FROM labor_norms WHERE norm_id = $1 RETURNING norm_id",
       [id],
@@ -199,6 +243,7 @@ router.delete("/labor-norms/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Запись не найдена" });
     }
+    await writeAuditLog(req, "DELETE", "labor_norms", details);
     res.json({ id: Number(id) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

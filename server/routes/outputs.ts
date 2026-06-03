@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import pool from "../db.ts";
+import { writeAuditLog } from "./audit.ts";
 
 const router = Router();
 
@@ -333,6 +334,17 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
       }
     }
     console.log(`[ЗАДАЧА 4] Распределение подрядчиков успешно рассчитано`);
+
+    await writeAuditLog(
+      req,
+      "CALCULATE",
+      "outputs",
+      `Выполнен сквозной расчет планирования СМР для строительного объекта ID: ${pprId}`,
+    );
+
+    await client.query("COMMIT");
+    console.log(`[УСПЕХ] Все 4 задачи успешно рассчитаны и сохранены в БД!`);
+    res.json({ success: true });
 
     await client.query("COMMIT");
     console.log(`[УСПЕХ] Все 4 задачи успешно рассчитаны и сохранены в БД!`);

@@ -7,8 +7,8 @@ import { Layout } from "./components/Layout/Layout";
 import { Directories } from "./pages/Directories/Directories";
 import { Inputs } from "./pages/Inputs/Inputs";
 import { Outputs } from "./pages/Outputs/Outputs";
+import AuditLogs from "./pages/AuditLogs/AuditLogs";
 
-// Информационная панель дашборда (Обзор проекта) - без инлайн-стилей
 const MockDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   return (
@@ -24,7 +24,6 @@ const MockDashboard: React.FC = () => {
   );
 };
 
-// Компонент защиты приватных страниц (проверяет авторизацию в Redux)
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -43,7 +42,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Публичный маршрут входа */}
         <Route
           path="/login"
           element={
@@ -51,28 +49,22 @@ export default function App() {
           }
         />
 
-        {/* Приватная часть приложения под единым Sidebar-интерфейсом */}
         <Route
           path="/*"
           element={
             <ProtectedRoute>
               <Layout>
                 <Routes>
-                  {/* Автоматический перенаправление с корня на дашборд */}
                   <Route
                     path=""
                     element={<Navigate to="dashboard" replace />}
                   />
-
-                  {/* Подключение реальных разделов и заглушек */}
                   <Route path="dashboard" element={<MockDashboard />} />
                   <Route path="directories" element={<Directories />} />
-
-                  {/* Временные заглушки для новых разделов по нашему новому плану */}
                   <Route path="inputs" element={<Inputs />} />
                   <Route path="outputs" element={<Outputs />} />
-
-                  {/* Перенаправление всех ненайденных путей на дашборд */}
+                  <Route path="audit-logs" element={<AuditLogs />} />{" "}
+                  {/* Подключаем путь к журналу аудита */}
                   <Route
                     path="*"
                     element={<Navigate to="/dashboard" replace />}

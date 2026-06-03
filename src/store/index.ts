@@ -3,6 +3,7 @@ import authReducer from "./auth/authSlice";
 import directoryReducer from "./slices/directorySlice";
 import inputsReducer from "./slices/inputsSlice";
 import outputReducer from "./slices/outputsSlice";
+import auditReducer from "./slices/auditSlice"; // 1. Импортируем новый слайс логов
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     directory: directoryReducer,
     inputs: inputsReducer,
     outputs: outputReducer,
+    audit: auditReducer,
   },
 });
 

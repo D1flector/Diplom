@@ -5,9 +5,16 @@ const API_URL = "http://localhost:5000/api/outputs";
 export const calculateOutputs = createAsyncThunk(
   "outputs/calculate",
   async (pprId: number, { rejectWithValue }) => {
+    const savedUser = localStorage.getItem("user");
+    const username = savedUser ? JSON.parse(savedUser).username : "anonymous";
+
     try {
       const response = await fetch(`${API_URL}/calculate/${pprId}`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-username": username,
+        },
       });
       const data = await response.json();
       if (!response.ok) {

@@ -3,7 +3,15 @@ import type { ConsumptionNorm, LaborNorm } from "../../types/entities";
 
 const API_URL = "http://localhost:5000/api";
 
-// --- Запросы получения данных ---
+const getHeaders = () => {
+  const savedUser = localStorage.getItem("user");
+  const username = savedUser ? JSON.parse(savedUser).username : "anonymous";
+  return {
+    "Content-Type": "application/json",
+    "x-user-username": username,
+  };
+};
+
 export const fetchMtrNorms = createAsyncThunk(
   "directory/fetchMtrNorms",
   async () => {
@@ -20,13 +28,12 @@ export const fetchLaborNorms = createAsyncThunk(
   },
 );
 
-// --- Операции CRUD для норм расхода МТР ---
 export const addMtrNorm = createAsyncThunk(
   "directory/addMtrNorm",
   async (data: Omit<ConsumptionNorm, "norm_id">) => {
     const response = await fetch(`${API_URL}/mtr-norms`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -44,7 +51,7 @@ export const updateMtrNorm = createAsyncThunk(
   }) => {
     const response = await fetch(`${API_URL}/mtr-norms/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -56,19 +63,19 @@ export const deleteMtrNorm = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/mtr-norms/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
   },
 );
 
-// --- Операции CRUD для трудовых нормативов ---
 export const addLaborNorm = createAsyncThunk(
   "directory/addLaborNorm",
   async (data: Omit<LaborNorm, "norm_id">) => {
     const response = await fetch(`${API_URL}/labor-norms`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -80,7 +87,7 @@ export const updateLaborNorm = createAsyncThunk(
   async ({ id, data }: { id: number; data: Omit<LaborNorm, "norm_id"> }) => {
     const response = await fetch(`${API_URL}/labor-norms/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -92,6 +99,7 @@ export const deleteLaborNorm = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/labor-norms/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
@@ -116,7 +124,6 @@ const directorySlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Получение данных (fetch)
       .addCase(fetchMtrNorms.fulfilled, (state, action) => {
         state.mtrNorms = action.payload;
         state.loading = false;
@@ -126,7 +133,6 @@ const directorySlice = createSlice({
         state.loading = false;
       })
 
-      // МТР операции
       .addCase(addMtrNorm.fulfilled, (state, action) => {
         state.mtrNorms.push(action.payload);
         state.loading = false;
@@ -147,7 +153,6 @@ const directorySlice = createSlice({
         state.loading = false;
       })
 
-      // Нормы труда операции
       .addCase(addLaborNorm.fulfilled, (state, action) => {
         state.laborNorms.push(action.payload);
         state.loading = false;
@@ -168,7 +173,6 @@ const directorySlice = createSlice({
         state.loading = false;
       })
 
-      // Обработка статусов pending / rejected (addCase всегда первыми, addMatcher всегда после)
       .addMatcher(
         (action) => action.type.endsWith("/pending"),
         (state) => {

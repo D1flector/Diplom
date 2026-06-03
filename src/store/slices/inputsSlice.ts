@@ -10,6 +10,15 @@ import type {
 
 const API_URL = "http://localhost:5000/api";
 
+const getHeaders = () => {
+  const savedUser = localStorage.getItem("user");
+  const username = savedUser ? JSON.parse(savedUser).username : "anonymous";
+  return {
+    "Content-Type": "application/json",
+    "x-user-username": username,
+  };
+};
+
 export const fetchPprData = createAsyncThunk(
   "inputs/fetchPprData",
   async () => {
@@ -22,7 +31,7 @@ export const addPprData = createAsyncThunk(
   async (data: Omit<PPRData, "ppr_id">) => {
     const response = await fetch(`${API_URL}/ppr-data`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -33,7 +42,7 @@ export const updatePprData = createAsyncThunk(
   async ({ id, data }: { id: number; data: Omit<PPRData, "ppr_id"> }) => {
     const response = await fetch(`${API_URL}/ppr-data/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -44,6 +53,7 @@ export const deletePprData = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/ppr-data/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
@@ -62,7 +72,7 @@ export const addWorkType = createAsyncThunk(
   async (data: Omit<WorkType, "work_type_id">) => {
     const response = await fetch(`${API_URL}/work-types`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -79,7 +89,7 @@ export const updateWorkType = createAsyncThunk(
   }) => {
     const response = await fetch(`${API_URL}/work-types/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -90,6 +100,7 @@ export const deleteWorkType = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/work-types/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
@@ -108,7 +119,7 @@ export const addClientDeadline = createAsyncThunk(
   async (data: Omit<ClientDeadline, "deadline_id">) => {
     const response = await fetch(`${API_URL}/client-deadlines`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -125,7 +136,7 @@ export const updateClientDeadline = createAsyncThunk(
   }) => {
     const response = await fetch(`${API_URL}/client-deadlines/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -136,6 +147,7 @@ export const deleteClientDeadline = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/client-deadlines/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
@@ -154,7 +166,7 @@ export const addWorkVolume = createAsyncThunk(
   async (data: Omit<WorkVolume, "vol_id">) => {
     const response = await fetch(`${API_URL}/work-volumes`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -165,7 +177,7 @@ export const updateWorkVolume = createAsyncThunk(
   async ({ id, data }: { id: number; data: Omit<WorkVolume, "vol_id"> }) => {
     const response = await fetch(`${API_URL}/work-volumes/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -176,6 +188,7 @@ export const deleteWorkVolume = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/work-volumes/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
@@ -194,7 +207,7 @@ export const addProjectSpec = createAsyncThunk(
   async (data: Omit<ProjectSpec, "spec_id">) => {
     const response = await fetch(`${API_URL}/project-spec`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -205,7 +218,7 @@ export const updateProjectSpec = createAsyncThunk(
   async ({ id, data }: { id: number; data: Omit<ProjectSpec, "spec_id"> }) => {
     const response = await fetch(`${API_URL}/project-spec/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -216,6 +229,7 @@ export const deleteProjectSpec = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/project-spec/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;
@@ -234,7 +248,7 @@ export const addContractor = createAsyncThunk(
   async (data: Omit<Contractor, "cont_id">) => {
     const response = await fetch(`${API_URL}/contractors`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -245,7 +259,7 @@ export const updateContractor = createAsyncThunk(
   async ({ id, data }: { id: number; data: Omit<Contractor, "cont_id"> }) => {
     const response = await fetch(`${API_URL}/contractors/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return await response.json();
@@ -256,6 +270,7 @@ export const deleteContractor = createAsyncThunk(
   async (id: number) => {
     const response = await fetch(`${API_URL}/contractors/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     const res = await response.json();
     return res.id;

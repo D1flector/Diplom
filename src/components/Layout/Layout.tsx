@@ -14,11 +14,11 @@ import {
   HelpCircle,
   Settings,
   FileEdit,
-  Users,
   PlayCircle,
   ChevronDown,
   ChevronUp,
   CheckCircle2,
+  ShieldAlert,
 } from "lucide-react";
 import styles from "./Layout.module.scss";
 
@@ -69,6 +69,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       name: "Выходные документы",
       icon: <Calendar size={20} />,
       allowedRoles: ["Инженер ПТО", "Руководитель проекта", "Администратор"],
+    },
+    {
+      path: "/audit-logs",
+      name: "Журнал аудита",
+      icon: <ShieldAlert size={20} />,
+      allowedRoles: ["Администратор"],
     },
   ];
 
