@@ -229,3 +229,122 @@ $error-red: #ef4444;
   max-width: 1200px;
   margin: 0 auto;
 }
+
+// ИНТЕРАКТИВНОЕ РУКОВОДСТВО ПОЛЬЗОВАТЕЛЯ (НОВЫЕ СТИЛИ)
+.guideWelcome {
+  background-color: $bg-sidebar;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid $border-color;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  p {
+    margin-top: 0.75rem;
+    color: $text-muted;
+    font-size: 0.875rem;
+  }
+}
+
+.guideContainer {
+  background-color: $bg-sidebar;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid $border-color;
+  margin-bottom: 1.5rem;
+}
+
+.guideHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: $text-muted;
+  font-weight: 600;
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stepCard {
+  border: 1px solid $border-color;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba($border-color, 0.2);
+  }
+}
+
+.stepCardActive {
+  @extend .stepCard;
+  background-color: rgba($bg-dark, 0.5);
+}
+
+.stepHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  cursor: pointer;
+}
+
+.stepTitleBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+
+  .stepIcon {
+    color: $accent-blue;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.chevron {
+  color: $text-muted;
+  display: flex;
+  align-items: center;
+}
+
+.stepContent {
+  padding: 1rem;
+  border-top: 1px solid $border-color;
+  color: $text-muted;
+  font-size: 0.875rem;
+  line-height: 1.6;
+
+  ul {
+    padding-left: 1.2rem;
+    margin-top: 0.5rem;
+
+    li {
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+
+.footerNote {
+  display: flex;
+  align-items: center;
+  font-size: 0.825rem;
+  color: $text-muted;
+
+  svg {
+    margin-right: 0.5rem;
+  }
+}
