@@ -9,7 +9,8 @@ export const writeAuditLog = async (
   tableName: string,
   details: string,
 ) => {
-  const username = (req.headers["x-user-username"] as string) || "Система";
+  const headerUser = req.headers["x-user-username"] as string;
+  const username = headerUser ? decodeURIComponent(headerUser) : "Система";
   try {
     await pool.query(
       `INSERT INTO audit_logs (username, action_type, table_name, details) 

@@ -5,10 +5,10 @@ const API_URL = "http://localhost:5000/api";
 
 const getHeaders = () => {
   const savedUser = localStorage.getItem("user");
-  const username = savedUser ? JSON.parse(savedUser).username : "anonymous";
+  const username = savedUser ? JSON.parse(savedUser).full_name : "Система";
   return {
     "Content-Type": "application/json",
-    "x-user-username": username,
+    "x-user-username": encodeURIComponent(username),
   };
 };
 

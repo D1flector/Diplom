@@ -74,7 +74,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       path: "/audit-logs",
       name: "Журнал аудита",
       icon: <ShieldAlert size={20} />,
-      allowedRoles: ["Администратор"],
+      allowedRoles: ["Администратор", "Руководитель проекта"],
     },
   ];
 

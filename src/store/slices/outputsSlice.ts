@@ -6,14 +6,14 @@ export const calculateOutputs = createAsyncThunk(
   "outputs/calculate",
   async (pprId: number, { rejectWithValue }) => {
     const savedUser = localStorage.getItem("user");
-    const username = savedUser ? JSON.parse(savedUser).username : "anonymous";
+    const username = savedUser ? JSON.parse(savedUser).full_name : "Система";
 
     try {
       const response = await fetch(`${API_URL}/calculate/${pprId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-username": username,
+          "x-user-username": encodeURIComponent(username),
         },
       });
       const data = await response.json();
