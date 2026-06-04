@@ -1,9 +1,9 @@
-$bg-dark: #020617; // цвет фона страницы
-$bg-card: #0f172a; // цвет карточки
-$border-color: #1e293b; // цвет границ
-$text-muted: #94a3b8; // серый текст
-$accent-blue: #2563eb; // синий цвет кнопок
-$error-red: #ef4444; // красный цвет ошибок
+$bg-dark: var(--bg-dark);
+$bg-card: var(--bg-card);
+$border-color: var(--border-color);
+$text-muted: var(--text-muted);
+$accent-blue: var(--accent-blue);
+$error-red: var(--error-red);
 
 .container {
   min-height: 100vh;
@@ -45,7 +45,7 @@ $error-red: #ef4444; // красный цвет ошибок
   text-align: center;
   font-size: 1.875rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-main);
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
 }
@@ -64,7 +64,7 @@ $error-red: #ef4444; // красный цвет ошибок
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #cbd5e1;
+    color: var(--text-light);
     margin-bottom: 0.5rem;
   }
 }
@@ -86,17 +86,17 @@ $error-red: #ef4444; // красный цвет ошибок
 .input {
   width: 100%;
   padding: 0.625rem 0.75rem 0.625rem 2.5rem;
-  background-color: #030712;
+  background-color: var(--input-bg);
   border: 1px solid $border-color;
   border-radius: 0.5rem;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 0.875rem;
   box-sizing: border-box;
 
   &:focus {
     outline: none;
     border-color: $accent-blue;
-    box-shadow: 0 0 0 2px rgba($accent-blue, 0.2);
+    box-shadow: 0 0 0 2px var(--accent-blue-transparent-20);
   }
 }
 
@@ -113,12 +113,12 @@ $error-red: #ef4444; // красный цвет ошибок
   margin-top: 1rem;
 
   &:hover {
-    background-color: darken($accent-blue, 10%);
+    background-color: var(--accent-blue-active);
   }
 }
 
 .error {
-  background-color: rgba($error-red, 0.1);
+  background-color: var(--error-red-transparent-10);
   border: 1px solid $error-red;
   color: #f87171;
   padding: 0.75rem;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../store";
@@ -19,6 +19,8 @@ import {
   ChevronUp,
   CheckCircle2,
   ShieldAlert,
+  Sun,
+  Moon,
 } from "lucide-react";
 import styles from "./Layout.module.scss";
 
@@ -33,6 +35,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [activeStep, setActiveStep] = useState<number | null>(1);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("theme");
+    return (saved as "light" | "dark") || "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const handleLogout = () => {
     dispatch(logoutSuccess());
@@ -177,7 +192,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className={styles.mainArea}>
         <header className={styles.header}>
           <h2>ПТО АО «МСУ-1»</h2>
-          <div className={styles.headerMeta}>Кабинет планирования СМР</div>
+          <div className={styles.headerActions}>
+            <button
+              onClick={toggleTheme}
+              className={styles.themeToggle}
+              title="Переключить тему"
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <div className={styles.headerMeta}>Кабинет планирования СМР</div>
+          </div>
         </header>
 
         <main className={styles.content}>

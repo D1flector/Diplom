@@ -1,19 +1,27 @@
-// Переменные цветов ПТО АО "МСУ-1"
-$bg-dark: #020617;
-$bg-card: #0f172a;
-$border-color: #1e293b;
-$text-muted: #94a3b8;
-$text-light: #f1f5f9;
-$accent-blue: #2563eb;
-$error-red: #ef4444;
-$accent-emerald: #10b981;
+/* Глобальные стили и хелперы для ПТО АО "МСУ-1" */
+
+$bg-dark: var(--bg-dark);
+$bg-card: var(--bg-card);
+$border-color: var(--border-color);
+$text-muted: var(--text-muted);
+$text-light: var(--text-light);
+$accent-blue: var(--accent-blue);
+$error-red: var(--error-red);
+$accent-emerald: var(--accent-emerald);
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+}
 
 .container {
   font-family:
     system-ui,
     -apple-system,
     sans-serif;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 // Горизонтальные вкладки входных документов (6 штук)
@@ -22,14 +30,14 @@ $accent-emerald: #10b981;
   gap: 0.5rem;
   border-bottom: 1px solid $border-color;
   margin-bottom: 1.5rem;
-  overflow-x: auto; // поддержка скролла на телефонах, если вкладки не влезают
+  overflow-x: auto;
   padding-bottom: 1px;
 
   &::-webkit-scrollbar {
     height: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(#ffffff, 0.1);
+    background-color: var(--border-color);
     border-radius: 2px;
   }
 }
@@ -47,7 +55,7 @@ $accent-emerald: #10b981;
   white-space: nowrap;
 
   &:hover {
-    color: #ffffff;
+    color: var(--text-main);
   }
 }
 
@@ -67,7 +75,7 @@ $accent-emerald: #10b981;
   border-radius: 0.5rem;
   border: 1px solid $border-color;
   align-items: center;
-  flex-wrap: wrap; // адаптивность для мобильных телефонов
+  flex-wrap: wrap;
 }
 
 .toolbarButton {
@@ -84,8 +92,8 @@ $accent-emerald: #10b981;
   color: $text-muted;
 
   &:hover:not(:disabled) {
-    color: #ffffff;
-    background-color: #1e293b;
+    color: var(--text-main);
+    background-color: var(--border-color);
   }
 
   &:disabled {
@@ -101,9 +109,9 @@ $accent-emerald: #10b981;
 
 .addBtn {
   @extend .toolbarButton;
-  background-color: rgba($accent-blue, 0.1);
-  color: lighten($accent-blue, 10%);
-  border-color: rgba($accent-blue, 0.2);
+  background-color: var(--accent-blue-transparent-10);
+  color: var(--accent-blue-hover);
+  border-color: var(--accent-blue-transparent-20);
 
   &:hover:not(:disabled) {
     background-color: $accent-blue;
@@ -115,9 +123,9 @@ $accent-emerald: #10b981;
   @extend .toolbarButton;
 
   &:hover:not(:disabled) {
-    background-color: rgba($accent-emerald, 0.1);
-    color: lighten($accent-emerald, 10%);
-    border-color: rgba($accent-emerald, 0.2);
+    background-color: var(--accent-emerald-transparent-10);
+    color: var(--accent-emerald-hover);
+    border-color: var(--accent-emerald-transparent-20);
   }
 }
 
@@ -125,9 +133,9 @@ $accent-emerald: #10b981;
   @extend .toolbarButton;
 
   &:hover:not(:disabled) {
-    background-color: rgba($error-red, 0.1);
-    color: lighten($error-red, 10%);
-    border-color: rgba($error-red, 0.2);
+    background-color: var(--error-red-transparent-10);
+    color: var(--error-red-hover);
+    border-color: var(--error-red-transparent-20);
   }
 }
 
@@ -142,7 +150,7 @@ $accent-emerald: #10b981;
   .tableHeader {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid $border-color;
-    background-color: rgba($bg-card, 0.5);
+    background-color: var(--bg-card-transparent-50);
     h3 {
       margin: 0;
       font-size: 1rem;
@@ -168,7 +176,7 @@ $accent-emerald: #10b981;
     font-weight: 600;
     color: $text-muted;
     text-transform: uppercase;
-    background-color: #020617;
+    background-color: var(--bg-table-header);
     white-space: nowrap;
   }
 
@@ -176,7 +184,7 @@ $accent-emerald: #10b981;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid $border-color;
     font-size: 0.875rem;
-    color: #cbd5e1;
+    color: var(--text-table-cell);
     white-space: nowrap;
   }
 }
@@ -186,14 +194,14 @@ $accent-emerald: #10b981;
   transition: background-color 0.15s;
 
   &:hover {
-    background-color: rgba(#ffffff, 0.02);
+    background-color: var(--row-hover-bg);
   }
 }
 
 .selectedRow {
-  background-color: rgba($accent-blue, 0.15) !important;
+  background-color: var(--accent-blue-transparent-15) !important;
   td {
-    color: #ffffff;
+    color: var(--text-main);
     font-weight: 500;
   }
 }
@@ -222,19 +230,19 @@ $accent-emerald: #10b981;
   .modalHeader {
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid $border-color;
-    background-color: rgba(#000000, 0.2);
+    background-color: var(--modal-header-bg);
     h4 {
       margin: 0;
       font-size: 1.125rem;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--text-main);
     }
   }
 
   .modalBody {
     padding: 1.5rem;
     max-height: 70vh;
-    overflow-y: auto; // прокрутка формы на маленьких телефонах
+    overflow-y: auto;
   }
 }
 
@@ -255,10 +263,10 @@ $accent-emerald: #10b981;
   select {
     width: 100%;
     padding: 0.625rem 0.75rem;
-    background-color: #020617;
+    background-color: var(--input-bg);
     border: 1px solid $border-color;
     border-radius: 0.375rem;
-    color: #ffffff;
+    color: var(--text-main);
     font-size: 0.875rem;
     box-sizing: border-box;
 
@@ -288,8 +296,8 @@ $accent-emerald: #10b981;
   transition: all 0.15s;
 
   &:hover {
-    background-color: #1e293b;
-    color: #ffffff;
+    background-color: var(--border-color);
+    color: var(--text-main);
   }
 }
 
@@ -305,6 +313,6 @@ $accent-emerald: #10b981;
   transition: background-color 0.15s;
 
   &:hover {
-    background-color: darken($accent-blue, 10%);
+    background-color: var(--accent-blue-active);
   }
 }

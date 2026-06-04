@@ -1,9 +1,9 @@
-$border-color: #1e293b;
-$text-muted: #94a3b8;
-$accent-blue: #2563eb;
+$border-color: var(--border-color);
+$text-muted: var(--text-muted);
+$accent-blue: var(--accent-blue);
 
 .tableBlock {
-  background-color: #0f172a;
+  background-color: var(--bg-card);
   border-radius: 0.75rem;
   border: 1px solid $border-color;
   overflow: hidden;
@@ -12,12 +12,12 @@ $accent-blue: #2563eb;
   .tableHeader {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid $border-color;
-    background-color: rgba(#0f172a, 0.5);
+    background-color: var(--bg-card-transparent-50);
     h3 {
       margin: 0;
       font-size: 1rem;
       font-weight: 700;
-      color: #f1f5f9;
+      color: var(--text-light);
     }
   }
 }
@@ -38,7 +38,7 @@ $accent-blue: #2563eb;
     font-weight: 600;
     color: $text-muted;
     text-transform: uppercase;
-    background-color: #020617;
+    background-color: var(--bg-table-header);
     white-space: nowrap;
   }
 
@@ -46,7 +46,7 @@ $accent-blue: #2563eb;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid $border-color;
     font-size: 0.875rem;
-    color: #cbd5e1;
+    color: var(--text-table-cell);
     white-space: nowrap;
   }
 }
@@ -56,14 +56,14 @@ $accent-blue: #2563eb;
   transition: background-color 0.15s;
 
   &:hover {
-    background-color: rgba(#ffffff, 0.02);
+    background-color: var(--row-hover-bg);
   }
 }
 
 .selectedRow {
-  background-color: rgba($accent-blue, 0.15) !important;
+  background-color: var(--accent-blue-transparent-15) !important;
   td {
-    color: #ffffff;
+    color: var(--text-main);
     font-weight: 500;
   }
 }

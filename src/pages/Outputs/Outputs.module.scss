@@ -1,12 +1,12 @@
-$bg-dark: #020617;
-$bg-card: #0f172a;
-$border-color: #1e293b;
-$accent: #2563eb;
-$success: #10b981;
+$bg-dark: var(--bg-dark);
+$bg-card: var(--bg-card);
+$border-color: var(--border-color);
+$accent: var(--accent-blue);
+$success: var(--accent-emerald);
 
 .container {
   padding: 2rem;
-  color: #fff;
+  color: var(--text-main);
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -28,7 +28,7 @@ $success: #10b981;
   border: 1px solid $border-color;
   border-radius: 12px;
   padding: 1.5rem;
-  cursor: pointer; // ВЕРНУЛИ
+  cursor: pointer;
   transition: all 0.2s;
   display: flex;
   flex-direction: column;
@@ -44,7 +44,7 @@ $success: #10b981;
   width: 54px;
   height: 54px;
   border-radius: 12px;
-  background: rgba($accent, 0.1);
+  background: var(--accent-blue-transparent-10);
   color: $accent;
   display: flex;
   align-items: center;
@@ -82,7 +82,7 @@ $success: #10b981;
 .reportCard {
   width: 100%;
   max-width: 900px;
-  background: #1e293b;
+  background: var(--report-card-bg);
   border-radius: 8px;
   height: fit-content;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
@@ -90,7 +90,7 @@ $success: #10b981;
 
 .reportHeader {
   padding: 10px 20px;
-  background: #0f172a;
+  background: var(--bg-sidebar);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -99,7 +99,7 @@ $success: #10b981;
 }
 
 .headerTitle {
-  color: #fff;
+  color: var(--text-main);
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -115,7 +115,7 @@ $success: #10b981;
   padding: 6px 14px;
   border-radius: 4px;
   font-weight: 600;
-  cursor: pointer; // ВЕРНУЛИ
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -145,7 +145,7 @@ $success: #10b981;
 .closeBtn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -153,7 +153,7 @@ $success: #10b981;
 
 .reportBody {
   padding: 40px;
-  background: #0a0f1d;
+  background: var(--report-body-bg);
   display: flex;
   justify-content: center;
 }
@@ -185,7 +185,7 @@ $success: #10b981;
   }
 }
 
-// ЛИСТ
+// ЛИСТ ДЛЯ ПЕЧАТИ (ОСТАЕТСЯ ВСЕГДА СВЕТЛЫМ)
 .paper {
   background: white;
   color: black;
@@ -273,11 +273,11 @@ $success: #10b981;
 .loaderArea {
   padding: 60px;
   text-align: center;
-  color: #fff;
+  color: var(--text-main);
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid rgba($accent, 0.2);
+    border: 3px solid var(--accent-blue-transparent-20);
     border-top-color: $accent;
     border-radius: 50%;
     animation: spin 1s linear infinite;
