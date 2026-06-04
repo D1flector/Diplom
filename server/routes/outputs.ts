@@ -21,7 +21,7 @@ router.get("/report/:taskId/:pprId", async (req: Request, res: Response) => {
         FROM mtr_plan mp
         LEFT JOIN project_spec ps ON mp.spec_id = ps.spec_id
         WHERE mp.ppr_id = $1
-        ORDER BY mp.mtr_id ASC`;
+        ORDER BY mp.delivery_date ASC, mp.mtr_id ASC`;
     } else if (taskId === "3") {
       queryText = `
         SELECT lp.*, wt.work_name 
@@ -138,7 +138,7 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
     for (const spec of specs) {
       const normResult = await client.query(
         `
-        SELECT cn.* FROM consumption_norms cn
+        SELECT cn.*, wt.work_name FROM consumption_norms cn
         LEFT JOIN work_types wt ON cn.work_type_id = wt.work_type_id
         WHERE LOWER(cn.res_category) LIKE LOWER($1) 
            OR LOWER(cn.res_category) LIKE LOWER($2)
@@ -149,17 +149,17 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
       );
 
       if (normResult.rows.length > 0) {
-        const coeff = parseFloat(normResult.rows[0].coeff_k);
-        const stageLink = normResult.rows[0].rationale || "СМР";
+        const norm = normResult.rows[0];
+        const coeff = parseFloat(norm.coeff_k);
+        const stageLink = norm.work_name.replace(" плиты", "");
         const reqVolume = spec.proj_vol * coeff;
 
         const calResult = await client.query(
           `
-          SELECT * FROM calendar_plan 
-          WHERE ppr_id = $1 
-          ORDER BY plan_id ASC LIMIT 1
+          SELECT start_date FROM calendar_plan 
+          WHERE ppr_id = $1 AND work_type_id = $2
         `,
-          [pprId],
+          [pprId, norm.work_type_id],
         );
 
         const deliveryDate =
@@ -287,23 +287,19 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
       }
 
       if (bestContractor) {
-        const volResult = await client.query(
-          "SELECT volume, unit FROM work_volumes WHERE ppr_id = $1 AND work_type_id = $2",
-          [pprId, lp.work_type_id],
-        );
-        const volUnit =
-          volResult.rows.length > 0
-            ? `${volResult.rows[0].volume} ${volResult.rows[0].unit}`
-            : "—";
-
         const calResult = await client.query(
-          "SELECT start_date FROM calendar_plan WHERE ppr_id = $1 AND work_type_id = $2",
+          "SELECT total_manhours, start_date FROM calendar_plan WHERE ppr_id = $1 AND work_type_id = $2",
           [pprId, lp.work_type_id],
         );
         const actStart =
           calResult.rows.length > 0
             ? calResult.rows[0].start_date
             : startDateSmr;
+        const totalManhours =
+          calResult.rows.length > 0
+            ? Number(calResult.rows[0].total_manhours).toFixed(0)
+            : "0";
+        const volUnit = `${totalManhours} чел/час`;
 
         const actualStart = new Date(actStart);
         const actualEnd = new Date(actStart);
@@ -341,10 +337,6 @@ router.post("/calculate/:pprId", async (req: Request, res: Response) => {
       "outputs",
       `Выполнен сквозной расчет планирования СМР для строительного объекта ID: ${pprId}`,
     );
-
-    await client.query("COMMIT");
-    console.log(`[УСПЕХ] Все 4 задачи успешно рассчитаны и сохранены в БД!`);
-    res.json({ success: true });
 
     await client.query("COMMIT");
     console.log(`[УСПЕХ] Все 4 задачи успешно рассчитаны и сохранены в БД!`);

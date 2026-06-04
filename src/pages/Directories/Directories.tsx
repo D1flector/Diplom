@@ -26,6 +26,7 @@ export const Directories: React.FC = () => {
     (state) => state.directory,
   );
   const { workTypes } = useAppSelector((state) => state.inputs);
+  const { user } = useAppSelector((state) => state.auth);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -40,6 +41,8 @@ export const Directories: React.FC = () => {
   const [labSpecialty, setLabSpecialty] = useState("");
   const [labRank, setLabRank] = useState("1");
   const [labManhourNorm, setLabManhourNorm] = useState("");
+
+  const isReadOnly = user?.role !== "Администратор";
 
   useEffect(() => {
     dispatch(fetchMtrNorms());
@@ -216,19 +219,23 @@ export const Directories: React.FC = () => {
       </div>
 
       <div className={styles.toolbar}>
-        <button onClick={handleOpenAdd} className={styles.addBtn}>
+        <button
+          onClick={handleOpenAdd}
+          disabled={isReadOnly}
+          className={styles.addBtn}
+        >
           <Plus size={14} /> Добавить строку
         </button>
         <button
           onClick={handleOpenEditSelected}
-          disabled={selectedId === null}
+          disabled={selectedId === null || isReadOnly}
           className={styles.editBtn}
         >
           <Edit3 size={14} /> Изменить
         </button>
         <button
           onClick={handleDeleteSelected}
-          disabled={selectedId === null}
+          disabled={selectedId === null || isReadOnly}
           className={styles.deleteBtn}
         >
           <Trash2 size={14} /> Удалить

@@ -52,7 +52,7 @@ export const Outputs: React.FC = () => {
     },
     {
       id: 4 as TaskID,
-      name: "План расстановки подрядных организаций",
+      name: "План использования специализированных подрядных организаций на объекте",
       icon: <UserCheck size={22} />,
     },
   ];
@@ -115,8 +115,8 @@ export const Outputs: React.FC = () => {
         "№ п/п": i + 1,
         "Наименование работ": item.work_name,
         "Всего чел/час": Number(item.total_manhours).toFixed(2),
-        "Кол-во чел": item.staff_qty,
-        Дней: item.work_days,
+        "Кол-во человек": item.staff_qty,
+        "Кол-ва рабочих дней": item.work_days,
         "Дата начала": new Date(item.start_date).toLocaleDateString(),
         "Дата окончания": new Date(item.end_date).toLocaleDateString(),
       }));
@@ -125,29 +125,31 @@ export const Outputs: React.FC = () => {
         "№ п/п": i + 1,
         "Наименование материала": item.mat_name,
         "Ед. изм.": item.unit,
-        "Расчетный объем": Number(item.req_volume).toFixed(2),
-        "Дата поставки": new Date(item.delivery_date).toLocaleDateString(),
+        "Расчетный объем закупки": Number(item.req_volume).toFixed(2),
+        "Плановая дата поставки": new Date(
+          item.delivery_date,
+        ).toLocaleDateString(),
         "Этап ГПР": item.stage_link,
       }));
     } else if (id === 3) {
       exportData = dataArray.map((item, i) => ({
         "№ п/п": i + 1,
         "Вид работ": item.work_name,
-        Специальность: item.specialty,
-        "Срок (дн)": item.work_days,
+        "Требуемая специальность": item.specialty,
+        "Срок выполнения (дни)": item.work_days,
         "Трудоемкость (чел-час)": Number(item.total_hours).toFixed(2),
-        "Численность (чел)": item.staff_count,
+        "Расчетная численность (чел)": item.staff_count,
       }));
     } else if (id === 4) {
       exportData = dataArray.map((item, i) => ({
         "№ п/п": i + 1,
-        Работа: item.work_name,
-        Объем: item.work_vol_unit,
-        Подрядчик: item.assigned_org || "Не назначен",
-        Срок: item.final_days,
-        Начало: new Date(item.actual_start).toLocaleDateString(),
-        Конец: new Date(item.actual_end).toLocaleDateString(),
-        "Стоимость (руб)": Number(item.final_cost).toLocaleString(),
+        "Наименование работ": item.work_name,
+        "Объем работ (ед.изм.)": item.work_vol_unit,
+        "Подрядчик (Бригада)": item.assigned_org || "Не назначен",
+        "Срок выполнения (дней)": item.final_days,
+        "Дата начала": new Date(item.actual_start).toLocaleDateString(),
+        "Дата окончания": new Date(item.actual_end).toLocaleDateString(),
+        "Стоимость работ (руб.)": Number(item.final_cost).toLocaleString(),
       }));
     }
 
@@ -341,8 +343,8 @@ export const Outputs: React.FC = () => {
                             <th>№ п/п</th>
                             <th>Наименование работ</th>
                             <th>Всего чел/час</th>
-                            <th>Кол-во чел</th>
-                            <th>Дней</th>
+                            <th>Кол-во человек</th>
+                            <th>Кол-ва рабочих дней</th>
                             <th>Дата начала</th>
                             <th>Дата окончания</th>
                           </tr>
@@ -383,8 +385,8 @@ export const Outputs: React.FC = () => {
                             <th>№ п/п</th>
                             <th>Наименование материала</th>
                             <th>Ед. изм.</th>
-                            <th>Объем</th>
-                            <th>Дата поставки</th>
+                            <th>Расчетный объем закупки</th>
+                            <th>Плановая дата поставки</th>
                             <th>Этап ГПР</th>
                           </tr>
                           <tr className={styles.numRow}>
@@ -422,9 +424,9 @@ export const Outputs: React.FC = () => {
                             <th>№ п/п</th>
                             <th>Вид работ</th>
                             <th>Требуемая специальность</th>
-                            <th>Срок (дн)</th>
-                            <th>Трудоемкость</th>
-                            <th>Численность</th>
+                            <th>Срок выполнения (дни)</th>
+                            <th>Трудоемкость (чел-час)</th>
+                            <th>Расчетная численность (чел)</th>
                           </tr>
                           <tr className={styles.numRow}>
                             <td>1</td>
@@ -456,14 +458,14 @@ export const Outputs: React.FC = () => {
                       <>
                         <thead>
                           <tr>
-                            <th>№</th>
-                            <th>Работа</th>
-                            <th>Объем</th>
-                            <th>Подрядчик</th>
-                            <th>Срок (дней)</th>
-                            <th>Начало</th>
-                            <th>Конец</th>
-                            <th>Стоимость</th>
+                            <th>№ п/п</th>
+                            <th>Наименование работ</th>
+                            <th>Объем работ (ед.изм.)</th>
+                            <th>Подрядчик (Бригада)</th>
+                            <th>Срок выполнения (дней)</th>
+                            <th>Дата начала</th>
+                            <th>Дата окончания</th>
+                            <th>Стоимость работ (руб.)</th>
                           </tr>
                           <tr className={styles.numRow}>
                             <td>1</td>
