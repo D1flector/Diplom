@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   Sun,
   Moon,
+  Menu, // Импортируем иконку гамбургера для мобильных устройств
 } from "lucide-react";
 import styles from "./Layout.module.scss";
 
@@ -35,6 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [activeStep, setActiveStep] = useState<number | null>(1);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Состояние для открытия меню на мобильных
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("theme");
     return (saved as "light" | "dark") || "dark";
@@ -44,6 +46,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
+
+  // Закрывать мобильное меню при смене страницы
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
@@ -142,7 +149,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className={styles.appShell}>
-      <aside className={styles.sidebar}>
+      {/* Затемняющая подложка для закрытия мобильного меню кликом по экрану */}
+      <div
+        className={`${styles.sidebarOverlay} ${isSidebarOpen ? styles.active : ""}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      {/* Динамически добавляем класс styles.sidebarOpen при активации меню */}
+      <aside
+        className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}
+      >
         <div>
           <div className={styles.logoArea}>
             <div className={styles.logoBox}>М</div>
@@ -191,7 +207,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <div className={styles.mainArea}>
         <header className={styles.header}>
-          <h2>ПТО АО «МСУ-1»</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            {/* Кнопка бургер-меню для мобильных устройств */}
+            <button
+              className={styles.menuButton}
+              onClick={() => setIsSidebarOpen(true)}
+              title="Открыть меню"
+            >
+              <Menu size={20} />
+            </button>
+            <h2>ПТО АО «МСУ-1»</h2>
+          </div>
           <div className={styles.headerActions}>
             <button
               onClick={toggleTheme}

@@ -411,7 +411,7 @@ export const Inputs: React.FC = () => {
             activeTab === "spec" ? styles.activeTabButton : styles.tabButton
           }
         >
-          Спецификация материалов
+          Проектная спецификация
         </button>
         <button
           onClick={() => handleTabChange("contractors")}

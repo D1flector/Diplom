@@ -328,3 +328,168 @@ $success: var(--accent-emerald);
     padding: 15mm !important;
   }
 }
+
+/* ==========================================================================
+   ПОЛНЫЙ БЛОК АДАПТИВНЫХ СТИЛЕЙ ДЛЯ СТРАНИЦЫ ВЫХОДНЫХ ДОКУМЕНТОВ (OUTPUTS)
+   ========================================================================== */
+
+// 1. Базовые правила для корректного отображения листа предпросмотра
+.reportCard {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.reportBody {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  justify-content: safe center;
+}
+
+.paper {
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+
+// Добавляем перенос для группы кнопок экспорта во всех состояниях
+.exportGroup {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+// 2. Адаптив для средних экранов (до 900px)
+@media (max-width: 900px) {
+  .reportCard {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .reportBody {
+    padding: 20px 10px;
+    justify-content: flex-start; // Сдвиг влево для скролла А4
+  }
+}
+
+// 3. Адаптив для планшетов (до 768px)
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .pageTitle {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+    &:hover {
+      transform: none; // Отключаем эффект на тач-экранах
+    }
+  }
+
+  .modalOverlay {
+    padding: 10px;
+  }
+
+  // Настройка шапки отчета на планшетах
+  .reportHeader {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+
+    .headerTitle {
+      flex: 1 1 100%;
+      margin-bottom: 4px;
+      white-space: normal;
+    }
+
+    select {
+      flex: 1 1 auto;
+      min-width: 130px;
+      padding: 6px 12px;
+      background-color: var(--input-bg, #030712);
+      border: 1px solid $border-color;
+      border-radius: 4px;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .exportGroup {
+      flex: 1 1 auto;
+      gap: 6px;
+    }
+
+    .runBtn,
+    .btn {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+  }
+}
+
+// 4. Адаптив для узких экранов и мобильных устройств (до 600px)
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  // Полный переход элементов шапки в вертикальную колонку
+  .reportHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+
+    .headerTitle {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+
+    select {
+      width: 100% !important;
+      min-width: 0 !important; // Снимаем ограничение минимальной ширины
+      box-sizing: border-box;
+    }
+
+    .exportGroup {
+      width: 100%;
+      display: flex;
+      flex-direction: row; // Кнопки экспорта выстраиваем в ряд с переносом
+      flex-wrap: wrap;
+      gap: 6px;
+
+      .btn,
+      button,
+      .excelBtn,
+      .pdfBtn {
+        flex: 1 1 calc(50% - 3px); // Делим кнопки экспорта пополам по ширине
+        min-width: 0 !important;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+    }
+
+    .runBtn,
+    .btn {
+      width: 100% !important;
+      min-width: 0 !important; // Снимаем ограничение минимальной ширины
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+
+  .toast {
+    bottom: 15px;
+    right: 15px;
+    left: 15px;
+    justify-content: center;
+  }
+}

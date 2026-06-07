@@ -499,3 +499,92 @@ $error-red: var(--error-red);
 .marginTopSm {
   margin-top: 0.5rem;
 }
+
+// Новые вспомогательные классы для работы мобильного меню
+.menuButton {
+  display: none;
+  background: transparent;
+  border: 1px solid $border-color;
+  color: $text-muted;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+
+  &:hover {
+    color: var(--text-main);
+    background-color: var(--row-hover-bg);
+  }
+}
+
+.sidebarOverlay {
+  display: none;
+}
+
+// Стили адаптива
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    height: 100%;
+    box-shadow: 20px 0 30px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+
+    &.sidebarOpen {
+      transform: translateX(0);
+    }
+  }
+
+  .sidebarOverlay {
+    &.active {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+      z-index: 999;
+    }
+  }
+
+  .header {
+    padding: 0 1rem;
+  }
+
+  .menuButton {
+    display: flex;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    .headerMeta {
+      display: none;
+    }
+  }
+
+  .headerActions {
+    gap: 0.5rem;
+  }
+
+  .guideWelcome {
+    padding: 1rem;
+    h2 {
+      font-size: 1.1rem;
+    }
+  }
+
+  .guideContainer {
+    padding: 1rem;
+  }
+}
