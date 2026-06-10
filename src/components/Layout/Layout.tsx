@@ -78,7 +78,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       path: "/directories",
       name: "Справочники",
       icon: <FolderOpen size={20} />,
-      allowedRoles: ["Инженер ПТО", "Администратор"],
+      allowedRoles: ["Инженер ПТО", "Руководитель проекта", "Администратор"],
     },
     {
       path: "/inputs",

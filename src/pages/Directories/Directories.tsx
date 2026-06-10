@@ -42,7 +42,8 @@ export const Directories: React.FC = () => {
   const [labRank, setLabRank] = useState("1");
   const [labManhourNorm, setLabManhourNorm] = useState("");
 
-  const isReadOnly = user?.role !== "Администратор";
+  const isReadOnly =
+    user?.role !== "Администратор" && user?.role !== "Руководитель проекта";
 
   useEffect(() => {
     dispatch(fetchMtrNorms());
